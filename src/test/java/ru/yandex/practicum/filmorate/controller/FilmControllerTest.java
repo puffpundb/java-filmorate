@@ -26,7 +26,7 @@ class FilmControllerTest {
         film.setName("Inception");
         film.setDescription("Dream within a dream");
         film.setReleaseDate(LocalDate.of(2010, 7, 16));
-        film.setDuration(Duration.ofMinutes(148));
+        film.setDuration(148);
 
         Film created = filmController.createFilm(film);
 
@@ -79,7 +79,7 @@ class FilmControllerTest {
         film.setName("Short");
         film.setDescription("Dream within a dream");
         film.setReleaseDate(LocalDate.of(2020, 1, 1));
-        film.setDuration(Duration.ofMinutes(-10));
+        film.setDuration(-10);
 
         ValidationException exception = assertThrows(ValidationException.class, () -> {
             filmController.createFilm(film);
@@ -94,7 +94,7 @@ class FilmControllerTest {
         film.setName("Old Title");
         film.setDescription("Old desc");
         film.setReleaseDate(LocalDate.of(2020, 1, 1));
-        film.setDuration(Duration.ofMinutes(100));
+        film.setDuration(100);
         Film created = filmController.createFilm(film);
 
         Film update = new Film();
@@ -102,7 +102,7 @@ class FilmControllerTest {
         update.setName("New Title");
         update.setDescription("Old desc");
         update.setReleaseDate(LocalDate.of(2020, 1, 1));
-        update.setDuration(Duration.ofMinutes(100));
+        update.setDuration(100);
 
         Film result = filmController.updateFilm(update);
 
@@ -127,13 +127,13 @@ class FilmControllerTest {
         Film film1 = new Film();
         film1.setName("Film 1");
         film1.setDescription("Old desc");
-        film1.setDuration(Duration.ofMinutes(100));
+        film1.setDuration(100);
         film1.setReleaseDate(LocalDate.now());
 
         Film film2 = new Film();
         film2.setName("Film 2");
         film2.setDescription("Old desc");
-        film2.setDuration(Duration.ofMinutes(100));
+        film2.setDuration(100);
         film2.setReleaseDate(LocalDate.now());
 
         filmController.createFilm(film1);
