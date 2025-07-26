@@ -40,7 +40,7 @@ public class FilmController {
     }
 
     @PutMapping
-    public Film updateFilm (@RequestBody Film newFilmData) {
+    public Film updateFilm(@RequestBody Film newFilmData) {
         if (!filmStore.containsKey(newFilmData.getId())) {
             log.warn("Попытка изменить фильм с несуществующим id: {}", newFilmData.getId());
             throw new ValidationException("Фильм с таким id не найден");
