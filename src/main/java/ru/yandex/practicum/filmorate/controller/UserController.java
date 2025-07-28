@@ -49,7 +49,6 @@ public class UserController {
             log.warn("Попытка изменить пользователя с несуществующим id: {}", newOldUser.getId());
             throw new ValidationException("Пользователь с таким id не найден");
         }
-        validateUser(newOldUser);
 
         User currentUser = userDataBase.get(newOldUser.getId());
 
@@ -75,6 +74,19 @@ public class UserController {
     }
 
     private void validateUser(User currentUser) {
+        if (currentUser.getEmail() == null) {
+            log.warn("Ошибка валидации: Email null");
+            throw new ValidationException("Email не должен быть пустым");
+        }
+        if (currentUser.getLogin() == null) {
+            log.warn("Ошибка валидации: Логин null");
+            throw new ValidationException("Логин не должен быть пустым");
+        }
+        if (currentUser.getBirthday() == null) {
+            log.warn("Ошибка валидации: Дата рождения null");
+            throw new ValidationException("Дата рождения не должна быть пустой");
+        }
+
         if (currentUser.getEmail().isBlank() || !currentUser.getEmail().contains("@")) {
             log.warn("Ошибка валидации: Не корректный email");
             throw new ValidationException("Email не должен быть пустым и должен указывать на сервис электронной почты");

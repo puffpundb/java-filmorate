@@ -45,7 +45,6 @@ public class FilmController {
             log.warn("Попытка изменить фильм с несуществующим id: {}", newFilmData.getId());
             throw new ValidationException("Фильм с таким id не найден");
         }
-        validateFilm(newFilmData);
 
         Film currentFilm = filmStore.get(newFilmData.getId());
 
@@ -71,9 +70,26 @@ public class FilmController {
     }
 
     private void validateFilm(Film currentFilm) {
-        if (currentFilm.getName() == null || currentFilm.getName().isBlank()) {
+        if (currentFilm.getName() == null) {
+            log.warn("Ошибка валидации: Название фильма null");
+            throw new ValidationException("Название не должно быть пустым");
+        }
+        if (currentFilm.getDescription() == null) {
+            log.warn("Ошибка валидации: Описание фильма null");
+            throw new ValidationException("Описание не должно быть пустым");
+        }
+        if (currentFilm.getReleaseDate() == null) {
+            log.warn("Ошибка валидации: Дата релиза фильма null");
+            throw new ValidationException("Дата релиза не должна быть пустой");
+        }
+        if (currentFilm.getDuration() == null) {
+            log.warn("Ошибка валидации: Продолжительность фильма null");
+            throw new ValidationException("Продолжительность не должна быть пустой");
+        }
+
+        if (currentFilm.getName().isBlank()) {
             log.warn("Ошибка валидации: Название фильма пустое");
-            throw new ValidationException("Имя не должно быть пустым");
+            throw new ValidationException("Название не должно быть пустым");
         }
         if (currentFilm.getDescription().length() > 200) {
             log.warn("Ошибка валидации: Превышен лимит символов описания");
