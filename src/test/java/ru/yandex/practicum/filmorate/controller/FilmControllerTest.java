@@ -36,13 +36,15 @@ class FilmControllerTest {
     void shouldThrowExceptionWhenNameBlank() {
         Film film = new Film();
         film.setName("");
+        film.setDescription("Dream within a dream");
         film.setReleaseDate(LocalDate.of(2020, 1, 1));
+        film.setDuration(148);
 
         ValidationException exception = assertThrows(ValidationException.class, () -> {
             filmController.createFilm(film);
         });
-
-        assertTrue(exception.getMessage().contains("Имя не должно быть пустым"));
+        System.out.println(exception.getMessage());
+        assertTrue(exception.getMessage().contains("Название не должно быть пустым"));
     }
 
     @Test
@@ -50,11 +52,12 @@ class FilmControllerTest {
         Film film = new Film();
         film.setName("Invalid");
         film.setDescription("A".repeat(201));
+        film.setReleaseDate(LocalDate.of(2020, 1, 1));
+        film.setDuration(148);
 
         ValidationException exception = assertThrows(ValidationException.class, () -> {
             filmController.createFilm(film);
         });
-
         assertTrue(exception.getMessage().contains("Максимальная длинна описания 200 символов"));
     }
 
@@ -64,6 +67,7 @@ class FilmControllerTest {
         film.setName("Old Film");
         film.setDescription("Dream within a dream");
         film.setReleaseDate(LocalDate.of(1800, 1, 1));
+        film.setDuration(148);
 
         ValidationException exception = assertThrows(ValidationException.class, () -> {
             filmController.createFilm(film);
