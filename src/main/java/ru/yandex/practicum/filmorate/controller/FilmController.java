@@ -1,8 +1,11 @@
 package ru.yandex.practicum.filmorate.controller;
 
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.interfaceAndAnnotation.Marker;
 import ru.yandex.practicum.filmorate.model.Film;
 
 import java.time.LocalDate;
@@ -10,6 +13,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+@Validated
 @RestController
 @Slf4j
 @RequestMapping("/films")
@@ -23,8 +27,9 @@ public class FilmController {
     }
 
     @PostMapping
-    public Film createFilm(@RequestBody Film newFilm) {
-        validateFilm(newFilm);
+    @Validated(Marker.OnCreate.class)
+    public Film createFilm(@RequestBody @Valid Film newFilm) {
+        validateCreateFilm(newFilm);
 
         newFilm.setId(generateId());
         filmStore.put(newFilm.getId(), newFilm);
@@ -40,7 +45,8 @@ public class FilmController {
     }
 
     @PutMapping
-    public Film updateFilm(@RequestBody Film newFilmData) {
+    @Validated(Marker.OnUpdate.class)
+    public Film updateFilm(@RequestBody @Valid Film newFilmData) {
         if (!filmStore.containsKey(newFilmData.getId())) {
             log.warn("Попытка изменить фильм с несуществующим id: {}", newFilmData.getId());
             throw new ValidationException("Фильм с таким id не найден");
@@ -69,39 +75,41 @@ public class FilmController {
         return currentFilm;
     }
 
-    private void validateFilm(Film currentFilm) {
-        if (currentFilm.getName() == null) {
-            log.warn("Ошибка валидации: Название фильма null");
-            throw new ValidationException("Название не должно быть пустым");
+    private void validateCreateFilm(Film currentFilm) {
+        if (currentFilm.getName() == null || currentFilm.getName().isBlank()) {
+            log.warn("Ошибка валидации: Название фильма пустое или null");
+            throw new ValidationException("Название не должно быть пустым или null");
         }
-        if (currentFilm.getDescription() == null) {
-            log.warn("Ошибка валидации: Описание фильма null");
-            throw new ValidationException("Описание не должно быть пустым");
+        if (currentFilm.getDescription() == null || currentFilm.getDescription().length() > 200) {
+            log.warn("Ошибка валидации: Превышен лимит символов описания или описание null");
+            throw new ValidationException("Максимальная длинна описания 200 символов или описание null");
         }
-        if (currentFilm.getReleaseDate() == null) {
-            log.warn("Ошибка валидации: Дата релиза фильма null");
-            throw new ValidationException("Дата релиза не должна быть пустой");
+        if (currentFilm.getReleaseDate() == null || currentFilm.getReleaseDate().isBefore(LocalDate.of(1895, 12, 28))) {
+            log.warn("Ошибка валидации: Слишком ранняя дата релиза или дата null");
+            throw new ValidationException("Дата релиза не должна быть раньше 28.12.1895 г. или null");
         }
-        if (currentFilm.getDuration() == null) {
-            log.warn("Ошибка валидации: Продолжительность фильма null");
-            throw new ValidationException("Продолжительность не должна быть пустой");
+        if (currentFilm.getDuration() == null || currentFilm.getDuration() < 0) {
+            log.warn("Ошибка валидации: Отрицательная продолжительность или продолжительность null");
+            throw new ValidationException("Продолжительность не может быть отрицательной или null");
         }
+    }
 
-        if (currentFilm.getName().isBlank()) {
-            log.warn("Ошибка валидации: Название фильма пустое");
-            throw new ValidationException("Название не должно быть пустым");
+    private void validateUpdateFilm(Film newFilmData) {
+        if (newFilmData.getName() != null && newFilmData.getName().isBlank()) {
+            log.warn("Ошибка валидации: Название фильма пустое или null");
+            throw new ValidationException("Название не должно быть пустым или null");
         }
-        if (currentFilm.getDescription().length() > 200) {
-            log.warn("Ошибка валидации: Превышен лимит символов описания");
-            throw new ValidationException("Максимальная длинна описания 200 символов");
+        if (newFilmData.getDescription() != null && newFilmData.getDescription().length() > 200) {
+            log.warn("Ошибка валидации: Превышен лимит символов описания или описание null");
+            throw new ValidationException("Максимальная длинна описания 200 символов или описание null");
         }
-        if (currentFilm.getReleaseDate().isBefore(LocalDate.of(1895, 12, 28))) {
-            log.warn("Ошибка валидации: Слишком ранняя дата релиза");
-            throw new ValidationException("Дата релиза не должна быть раньше 28.12.1895 г.");
+        if (newFilmData.getReleaseDate() != null && newFilmData.getReleaseDate().isBefore(LocalDate.of(1895, 12, 28))) {
+            log.warn("Ошибка валидации: Слишком ранняя дата релиза или дата null");
+            throw new ValidationException("Дата релиза не должна быть раньше 28.12.1895 г. или null");
         }
-        if (currentFilm.getDuration() < 0) {
-            log.warn("Ошибка валидации: Отрицательная продолжительность");
-            throw new ValidationException("Продолжительность не может быть отрицательной");
+        if (newFilmData.getDuration() != null && newFilmData.getDuration() < 0) {
+            log.warn("Ошибка валидации: Отрицательная продолжительность или продолжительность null");
+            throw new ValidationException("Продолжительность не может быть отрицательной или null");
         }
     }
 
