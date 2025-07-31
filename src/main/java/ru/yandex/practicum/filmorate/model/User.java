@@ -1,8 +1,6 @@
 package ru.yandex.practicum.filmorate.model;
 
-import jakarta.validation.constraints.*;
 import lombok.Data;
-import ru.yandex.practicum.filmorate.interfaceAndAnnotation.Marker;
 
 import java.time.LocalDate;
 
