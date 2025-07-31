@@ -1,11 +1,8 @@
 package ru.yandex.practicum.filmorate.controller;
 
-import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
-import ru.yandex.practicum.filmorate.interfaceAndAnnotation.Marker;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.time.LocalDate;
@@ -13,7 +10,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-@Validated
+
 @RestController
 @Slf4j
 @RequestMapping("/users")
@@ -27,9 +24,8 @@ public class UserController {
     }
 
     @PostMapping
-    @Validated(Marker.OnCreate.class)
-    public User createUser(@RequestBody @Valid User newUser) {
-        validateUser(newUser);
+    public User createUser(@RequestBody User newUser) {
+        validateUserCreate(newUser);
 
         if (newUser.getName() == null) {
             log.info("Новый пользователь с пустым именем. Вместо имени подставлен логин");
@@ -49,37 +45,38 @@ public class UserController {
     }
 
     @PutMapping
-    @Validated(Marker.OnUpdate.class)
-    public User updateuser(@RequestBody @Valid User newOldUser) {
-        if (!userDataBase.containsKey(newOldUser.getId())) {
-            log.warn("Попытка изменить пользователя с несуществующим id: {}", newOldUser.getId());
+    public User updateuser(@RequestBody User newUserData) {
+        if (!userDataBase.containsKey(newUserData.getId())) {
+            log.warn("Попытка изменить пользователя с несуществующим id: {}", newUserData.getId());
             throw new ValidationException("Пользователь с таким id не найден");
         }
 
-        User currentUser = userDataBase.get(newOldUser.getId());
+        validateUserUpdate(newUserData);
 
-        if (newOldUser.getEmail() != null) {
-            log.info("Изменение email-а пользователя. Старый: {}, новый: {}", currentUser.getEmail(), newOldUser.getEmail());
-            currentUser.setEmail(newOldUser.getEmail());
+        User currentUser = userDataBase.get(newUserData.getId());
+
+        if (newUserData.getEmail() != null) {
+            log.info("Изменение email-а пользователя. Старый: {}, новый: {}", currentUser.getEmail(), newUserData.getEmail());
+            currentUser.setEmail(newUserData.getEmail());
         }
-        if (newOldUser.getLogin() != null) {
-            log.info("Изменение логина пользователя. Старый: {}, новый: {}", currentUser.getLogin(), newOldUser.getLogin());
-            currentUser.setLogin(newOldUser.getLogin());
+        if (newUserData.getLogin() != null) {
+            log.info("Изменение логина пользователя. Старый: {}, новый: {}", currentUser.getLogin(), newUserData.getLogin());
+            currentUser.setLogin(newUserData.getLogin());
         }
-        if (newOldUser.getName() != null) {
-            log.info("Изменение имени пользователя. Старое: {}, новое: {}", currentUser.getName(), newOldUser.getName());
-            currentUser.setName(newOldUser.getName());
+        if (newUserData.getName() != null) {
+            log.info("Изменение имени пользователя. Старое: {}, новое: {}", currentUser.getName(), newUserData.getName());
+            currentUser.setName(newUserData.getName());
         }
-        if (newOldUser.getBirthday() != null) {
-            log.info("Изменение даты рождения пользователя. Старая: {}, новая: {}", currentUser.getBirthday(), newOldUser.getBirthday());
-            currentUser.setBirthday(newOldUser.getBirthday());
+        if (newUserData.getBirthday() != null) {
+            log.info("Изменение даты рождения пользователя. Старая: {}, новая: {}", currentUser.getBirthday(), newUserData.getBirthday());
+            currentUser.setBirthday(newUserData.getBirthday());
         }
 
         log.info("Пользователь обновлён");
         return currentUser;
     }
 
-    private void validateUser(User currentUser) {
+    private void validateUserCreate(User currentUser) {
         if (currentUser.getEmail() == null || currentUser.getEmail().isBlank() || !currentUser.getEmail().contains("@")) {
             log.warn("Ошибка валидации: Не корректный email");
             throw new ValidationException("Email не должен быть пустым и должен указывать на сервис электронной почты");
@@ -89,6 +86,21 @@ public class UserController {
             throw new ValidationException("Логин не должен быть пустым или содержать пробелы");
         }
         if (currentUser.getBirthday() == null || currentUser.getBirthday().isAfter(LocalDate.now())) {
+            log.warn("Ошибка валидации: Дата рождения указана в будущем");
+            throw new ValidationException("Дата рождения не может быть в будущем");
+        }
+    }
+
+    private void validateUserUpdate(User newUserData) {
+        if (newUserData.getEmail() != null && (newUserData.getEmail().isBlank() || !newUserData.getEmail().contains("@"))) {
+            log.warn("Ошибка валидации: Не корректный email");
+            throw new ValidationException("Email не должен быть пустым и должен указывать на сервис электронной почты");
+        }
+        if (newUserData.getLogin() != null && (newUserData.getLogin().isBlank() || newUserData.getLogin().contains(" "))) {
+            log.warn("Ошибка валидации: Логин пустой или содержит пробельные символы");
+            throw new ValidationException("Логин не должен быть пустым или содержать пробелы");
+        }
+        if (newUserData.getBirthday() != null && newUserData.getBirthday().isAfter(LocalDate.now())) {
             log.warn("Ошибка валидации: Дата рождения указана в будущем");
             throw new ValidationException("Дата рождения не может быть в будущем");
         }

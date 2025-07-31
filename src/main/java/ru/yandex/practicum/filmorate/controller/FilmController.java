@@ -13,7 +13,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-@Validated
 @RestController
 @Slf4j
 @RequestMapping("/films")
@@ -27,8 +26,7 @@ public class FilmController {
     }
 
     @PostMapping
-    @Validated(Marker.OnCreate.class)
-    public Film createFilm(@RequestBody @Valid Film newFilm) {
+    public Film createFilm(@RequestBody Film newFilm) {
         validateCreateFilm(newFilm);
 
         newFilm.setId(generateId());
@@ -45,12 +43,13 @@ public class FilmController {
     }
 
     @PutMapping
-    @Validated(Marker.OnUpdate.class)
-    public Film updateFilm(@RequestBody @Valid Film newFilmData) {
+    public Film updateFilm(@RequestBody Film newFilmData) {
         if (!filmStore.containsKey(newFilmData.getId())) {
             log.warn("Попытка изменить фильм с несуществующим id: {}", newFilmData.getId());
             throw new ValidationException("Фильм с таким id не найден");
         }
+
+        validateUpdateFilm(newFilmData);
 
         Film currentFilm = filmStore.get(newFilmData.getId());
 
