@@ -11,7 +11,7 @@ import java.util.*;
 
 @Slf4j
 @Component
-public class InMemoryUserStorage implements  UserStorage{
+public class InMemoryUserStorage implements  UserStorage {
 	private final Map<Integer, User> userDataBase = new HashMap<>();
 
 	private Integer currentMaxId = 0;
