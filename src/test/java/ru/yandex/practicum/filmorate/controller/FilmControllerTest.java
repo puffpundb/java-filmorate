@@ -3,11 +3,19 @@ package ru.yandex.practicum.filmorate.controller;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.service.film.FilmService;
+import ru.yandex.practicum.filmorate.service.film.FilmServiceImpl;
+import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
+import ru.yandex.practicum.filmorate.storage.film.InMemoryFilmStorage;
+import ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage;
+import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -16,7 +24,10 @@ class FilmControllerTest {
 
     @BeforeEach
     void beforeEach() {
-        filmController = new FilmController();
+        FilmStorage filmStore = new InMemoryFilmStorage();
+        FilmService filmService = new FilmServiceImpl(filmStore);
+        UserStorage userStore = new InMemoryUserStorage();
+        filmController = new FilmController(filmStore, filmService, userStore);
     }
 
     @Test
@@ -118,7 +129,7 @@ class FilmControllerTest {
         film.setId(999);
         film.setName("Not exists");
 
-        ValidationException exception = assertThrows(ValidationException.class, () -> {
+        NotFoundException exception = assertThrows(NotFoundException.class, () -> {
             filmController.updateFilm(film);
         });
 
@@ -142,7 +153,7 @@ class FilmControllerTest {
         filmController.createFilm(film1);
         filmController.createFilm(film2);
 
-        ArrayList<Film> all = filmController.getAllFilm();
+        List<Film> all = filmController.getAllFilm();
 
         assertEquals(2, all.size());
     }

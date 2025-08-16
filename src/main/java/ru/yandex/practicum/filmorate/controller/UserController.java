@@ -1,112 +1,61 @@
 package ru.yandex.practicum.filmorate.controller;
 
-import lombok.extern.slf4j.Slf4j;
+import lombok.AllArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.service.user.UserService;
+import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
-import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-
+import java.util.List;
 
 @RestController
-@Slf4j
+@AllArgsConstructor
 @RequestMapping("/users")
 public class UserController {
-    private final Map<Integer, User> userDataBase = new HashMap<>();
-    private Integer currentMaxId = 0;
+    private final UserStorage userStore;
+    private final UserService userService;
 
     @GetMapping
+    @ResponseStatus(HttpStatus.OK)
     public ArrayList<User> getAllUsers() {
-        return new ArrayList<>(userDataBase.values());
+        return userStore.getAllUsers();
     }
 
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     public User createUser(@RequestBody User newUser) {
-        validateUserCreate(newUser);
-
-        if (newUser.getName() == null) {
-            log.info("Новый пользователь с пустым именем. Вместо имени подставлен логин");
-            newUser.setName(newUser.getLogin());
-        }
-        newUser.setId(generateId());
-        userDataBase.put(newUser.getId(), newUser);
-
-        log.info("Новый пользователь добавлен. Имя: {}, логин: {}, id: {}, email: {}, дата рождения: {}",
-                newUser.getName(),
-                newUser.getLogin(),
-                newUser.getId(),
-                newUser.getEmail(),
-                newUser.getBirthday()
-        );
-        return newUser;
+        return userStore.createUser(newUser);
     }
 
     @PutMapping
+    @ResponseStatus(HttpStatus.OK)
     public User updateuser(@RequestBody User newUserData) {
-        if (!userDataBase.containsKey(newUserData.getId())) {
-            log.warn("Попытка изменить пользователя с несуществующим id: {}", newUserData.getId());
-            throw new ValidationException("Пользователь с таким id не найден");
-        }
-
-        validateUserUpdate(newUserData);
-
-        User currentUser = userDataBase.get(newUserData.getId());
-
-        if (newUserData.getEmail() != null) {
-            log.info("Изменение email-а пользователя. Старый: {}, новый: {}", currentUser.getEmail(), newUserData.getEmail());
-            currentUser.setEmail(newUserData.getEmail());
-        }
-        if (newUserData.getLogin() != null) {
-            log.info("Изменение логина пользователя. Старый: {}, новый: {}", currentUser.getLogin(), newUserData.getLogin());
-            currentUser.setLogin(newUserData.getLogin());
-        }
-        if (newUserData.getName() != null) {
-            log.info("Изменение имени пользователя. Старое: {}, новое: {}", currentUser.getName(), newUserData.getName());
-            currentUser.setName(newUserData.getName());
-        }
-        if (newUserData.getBirthday() != null) {
-            log.info("Изменение даты рождения пользователя. Старая: {}, новая: {}", currentUser.getBirthday(), newUserData.getBirthday());
-            currentUser.setBirthday(newUserData.getBirthday());
-        }
-
-        log.info("Пользователь обновлён");
-        return currentUser;
+        return userStore.updateUser(newUserData);
     }
 
-    private void validateUserCreate(User currentUser) {
-        if (currentUser.getEmail() == null || currentUser.getEmail().isBlank() || !currentUser.getEmail().contains("@")) {
-            log.warn("Ошибка валидации: Не корректный email");
-            throw new ValidationException("Email не должен быть пустым и должен указывать на сервис электронной почты");
-        }
-        if (currentUser.getLogin() == null || currentUser.getLogin().isBlank() || currentUser.getLogin().contains(" ")) {
-            log.warn("Ошибка валидации: Логин пустой или содержит пробельные символы");
-            throw new ValidationException("Логин не должен быть пустым или содержать пробелы");
-        }
-        if (currentUser.getBirthday() == null || currentUser.getBirthday().isAfter(LocalDate.now())) {
-            log.warn("Ошибка валидации: Дата рождения указана в будущем");
-            throw new ValidationException("Дата рождения не может быть в будущем");
-        }
+    @GetMapping("/{id}/friends")
+    @ResponseStatus(HttpStatus.OK)
+    public List<User> getUserFriends(@PathVariable Integer id) {
+        return userService.getUserFriends(id);
     }
 
-    private void validateUserUpdate(User newUserData) {
-        if (newUserData.getEmail() != null && (newUserData.getEmail().isBlank() || !newUserData.getEmail().contains("@"))) {
-            log.warn("Ошибка валидации: Не корректный email");
-            throw new ValidationException("Email не должен быть пустым и должен указывать на сервис электронной почты");
-        }
-        if (newUserData.getLogin() != null && (newUserData.getLogin().isBlank() || newUserData.getLogin().contains(" "))) {
-            log.warn("Ошибка валидации: Логин пустой или содержит пробельные символы");
-            throw new ValidationException("Логин не должен быть пустым или содержать пробелы");
-        }
-        if (newUserData.getBirthday() != null && newUserData.getBirthday().isAfter(LocalDate.now())) {
-            log.warn("Ошибка валидации: Дата рождения указана в будущем");
-            throw new ValidationException("Дата рождения не может быть в будущем");
-        }
+    @PutMapping("/{id}/friends/{friendId}")
+    @ResponseStatus(HttpStatus.OK)
+    public List<User> addToFriend(@PathVariable Integer id, @PathVariable Integer friendId) {
+        return userService.addToFriendsList(id, friendId);
     }
 
-    private Integer generateId() {
-        return ++currentMaxId;
+    @DeleteMapping("/{id}/friends/{friendId}")
+    @ResponseStatus(HttpStatus.OK)
+    public List<User> deleteFromFriend(@PathVariable Integer id, @PathVariable Integer friendId) {
+        return userService.deleteFromFriendsList(id, friendId);
+    }
+
+    @GetMapping("/{id}/friends/common/{friendId}")
+    @ResponseStatus(HttpStatus.OK)
+    public List<User> findCommonFriends(@PathVariable Integer id, @PathVariable Integer friendId) {
+        return userService.getCommonFriends(id, friendId);
     }
 }
