@@ -5,34 +5,30 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.service.user.UserService;
-import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @RestController
 @AllArgsConstructor
 @RequestMapping("/users")
 public class UserController {
-    private final UserStorage userStore;
     private final UserService userService;
 
     @GetMapping
-    @ResponseStatus(HttpStatus.OK)
-    public ArrayList<User> getAllUsers() {
-        return userStore.getAllUsers();
+    public List<User> getAllUsers() {
+        return userService.getAllUsers();
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public User createUser(@RequestBody User newUser) {
-        return userStore.createUser(newUser);
+        return userService.createUser(newUser);
     }
 
     @PutMapping
     @ResponseStatus(HttpStatus.OK)
-    public User updateuser(@RequestBody User newUserData) {
-        return userStore.updateUser(newUserData);
+    public User updateUser(@RequestBody User newUserData) {
+        return userService.updateUser(newUserData);
     }
 
     @GetMapping("/{id}/friends")

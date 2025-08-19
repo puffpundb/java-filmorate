@@ -10,4 +10,10 @@ public interface FilmService {
 	void disliked(Integer filmId, Integer userId);
 
 	List<Film> getMostRatedFilms(int count);
+
+	List<Film> getAllFilm();
+
+	Film createFilm(Film newFilm);
+
+	Film updateFilm(Film newFilmData);
 }

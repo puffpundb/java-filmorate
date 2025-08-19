@@ -81,4 +81,19 @@ public class UserServiceImpl implements UserService {
 
 		throw new NotFoundException("Пользователь не найден");
 	}
+
+	@Override
+	public List<User> getAllUsers() {
+		return userDataBase.getAllUsers();
+	}
+
+	@Override
+	public User createUser(User newUser) {
+		return userDataBase.createUser(newUser);
+	}
+
+	@Override
+	public User updateUser(User newUserData) {
+		return userDataBase.updateUser(newUserData);
+	}
 }

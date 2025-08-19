@@ -11,7 +11,7 @@ import ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -22,7 +22,7 @@ class UserControllerTest {
     void beforeEach() {
         UserStorage userStore = new InMemoryUserStorage();
         UserService userService = new UserServiceImpl(userStore);
-        userController = new UserController(userStore, userService);
+        userController = new UserController(userService);
     }
 
     @Test
@@ -133,7 +133,7 @@ class UserControllerTest {
         update.setBirthday(LocalDate.of(1990, 1, 1));
         update.setEmail("updated@example.com");
 
-        User result = userController.updateuser(update);
+        User result = userController.updateUser(update);
 
         assertEquals("updated@example.com", result.getEmail());
     }
@@ -145,7 +145,7 @@ class UserControllerTest {
         user.setEmail("notexists@example.com");
 
         NotFoundException exception = assertThrows(NotFoundException.class, () -> {
-            userController.updateuser(user);
+            userController.updateUser(user);
         });
 
         assertTrue(exception.getMessage().contains("Пользователь с таким id не найден"));
@@ -166,7 +166,7 @@ class UserControllerTest {
         userController.createUser(user1);
         userController.createUser(user2);
 
-        ArrayList<User> all = userController.getAllUsers();
+        List<User> all = userController.getAllUsers();
 
         assertEquals(2, all.size());
     }
