@@ -81,7 +81,11 @@ public class InMemoryUserStorage implements  UserStorage {
 
 	@Override
 	public User getUser(Integer id) {
-		return userDataBase.get(id);
+		if (userDataBase.containsKey(id)) {
+			return userDataBase.get(id);
+		}
+
+		throw new NotFoundException("Пользователь не найден");
 	}
 
 	private void validateUserCreate(User currentUser) {

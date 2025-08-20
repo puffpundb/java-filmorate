@@ -2,7 +2,6 @@ package ru.yandex.practicum.filmorate.service.film;
 
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
@@ -18,25 +17,16 @@ public class FilmServiceImpl implements FilmService {
 
 	@Override
 	public void liked(Integer filmId, Integer userId) {
-		if (!userDataBase.isContain(userId)) {
-			throw new NotFoundException("Пользователь с данным id не найден");
-		}
+		userDataBase.getUser(userId);
 
 		filmDataBase.getFilm(filmId).getUsersLike().add(userId);
 	}
 
 	@Override
 	public void disliked(Integer filmId, Integer userId) {
-		if (!userDataBase.isContain(userId)) {
-			throw new NotFoundException("Пользователь с данным id не найден");
-		}
+		userDataBase.getUser(userId);
 
-		if (filmDataBase.isContain(filmId)) {
-			filmDataBase.getFilm(filmId).getUsersLike().remove(userId);
-			return;
-		}
-
-		throw new NotFoundException("Фильм не найден");
+		filmDataBase.getFilm(filmId).getUsersLike().remove(userId);
 	}
 
 	@Override
