@@ -12,12 +12,12 @@ import java.util.*;
 @Slf4j
 @Component
 public class InMemoryUserStorage implements  UserStorage {
-	private final Map<Integer, User> userDataBase = new HashMap<>();
+	private final Map<Long, User> userDataBase = new HashMap<>();
 
 	private Integer currentMaxId = 0;
 
 	@Override
-	public ArrayList<User> getAllUsers() {
+	public List<User> getAllUsers() {
 		return new ArrayList<>(userDataBase.values());
 	}
 
@@ -70,22 +70,37 @@ public class InMemoryUserStorage implements  UserStorage {
 	}
 
 	@Override
-	public Set<Integer> getUserFriends(Integer id) {
+	public Set<Long> getUserFriends(Long id) {
 		return userDataBase.get(id).getFriendsList();
 	}
 
 	@Override
-	public boolean isContain(Integer id) {
+	public boolean isContain(Long id) {
 		return userDataBase.containsKey(id);
 	}
 
 	@Override
-	public User getUser(Integer id) {
+	public User getUser(Long id) {
 		if (userDataBase.containsKey(id)) {
 			return userDataBase.get(id);
 		}
 
 		throw new NotFoundException("Пользователь не найден");
+	}
+
+	@Override
+	public void addFriend(Long id, Long friendId) {
+
+	}
+
+	@Override
+	public void removeFriend(Long id, Long friendId) {
+
+	}
+
+	@Override
+	public List<User> getAllFriends(Long id) {
+		return List.of();
 	}
 
 	private void validateUserCreate(User currentUser) {

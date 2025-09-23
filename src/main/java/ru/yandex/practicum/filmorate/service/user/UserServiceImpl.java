@@ -1,6 +1,7 @@
 package ru.yandex.practicum.filmorate.service.user;
 
-import lombok.AllArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
@@ -9,68 +10,54 @@ import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 import java.util.*;
 
 @Service
-@AllArgsConstructor
 public class UserServiceImpl implements UserService {
+	@Qualifier("userDbStorage")
 	UserStorage userDataBase;
 
-	@Override
-	public List<User> getUserFriends(Integer userId) {
-		if (userDataBase.isContain(userId)) {
-			List<Integer> userFriendsId = new ArrayList<>(userDataBase.getUser(userId).getFriendsList());
+	@Autowired
+	public UserServiceImpl(@Qualifier("userDbStorage") UserStorage userDataBase) {
+		this.userDataBase = userDataBase;
+	}
 
-			return userFriendsId.stream()
-					.map(userDataBase::getUser)
-					.filter(Objects::nonNull)
-					.toList();
+	@Override
+	public List<User> getUserFriends(Long userId) {
+		List<Long> userFriendsId = new ArrayList<>(userDataBase.getUserFriends(userId));
+
+		return userFriendsId.stream()
+				.map(userDataBase::getUser)
+				.filter(Objects::nonNull)
+				.toList();
+	}
+
+	@Override
+	public List<User> addToFriendsList(Long userId, Long friendId) {
+		if (userDataBase.isContain(userId) && userDataBase.isContain(friendId)) {
+			userDataBase.addFriend(userId, friendId);
+
+			return userDataBase.getAllFriends(userId);
 		}
 
 		throw new NotFoundException("Пользователь не найден");
 	}
 
 	@Override
-	public List<User> addToFriendsList(Integer userId, Integer friendId) {
+	public List<User> deleteFromFriendsList(Long userId, Long friendId) {
 		if (userDataBase.isContain(userId) && userDataBase.isContain(friendId)) {
-			User currentUser = userDataBase.getUser(userId);
-			User currentFriend = userDataBase.getUser(friendId);
+			userDataBase.removeFriend(userId, friendId);
 
-			currentUser.getFriendsList().add(friendId);
-			currentFriend.getFriendsList().add(userId);
-
-			List<Integer> friendsId = new ArrayList<>(currentUser.getFriendsList());
-			return friendsId.stream()
-					.map(id -> userDataBase.getUser(id))
-					.toList();
+			return userDataBase.getAllFriends(userId);
 		}
 
 		throw new NotFoundException("Пользователь не найден");
 	}
 
 	@Override
-	public List<User> deleteFromFriendsList(Integer userId, Integer friendId) {
+	public List<User> getCommonFriends(Long userId, Long friendId) {
 		if (userDataBase.isContain(userId) && userDataBase.isContain(friendId)) {
 			User currentUser = userDataBase.getUser(userId);
 			User currentFriend = userDataBase.getUser(friendId);
 
-			currentUser.getFriendsList().remove(friendId);
-			currentFriend.getFriendsList().remove(userId);
-
-			List<Integer> friendsId = new ArrayList<>(currentUser.getFriendsList());
-			return friendsId.stream()
-					.map(id -> userDataBase.getUser(id))
-					.filter(Objects::nonNull)
-					.toList();
-		}
-
-		throw new NotFoundException("Пользователь не найден");
-	}
-
-	@Override
-	public List<User> getCommonFriends(Integer userId, Integer friendId) {
-		if (userDataBase.isContain(userId) && userDataBase.isContain(friendId)) {
-			User currentUser = userDataBase.getUser(userId);
-			User currentFriend = userDataBase.getUser(friendId);
-
-			List<Integer> mutualSet = currentUser.getFriendsList().stream()
+			List<Long> mutualSet = currentUser.getFriendsList().stream()
 					.filter(currentFriend.getFriendsList()::contains)
 					.toList();
 

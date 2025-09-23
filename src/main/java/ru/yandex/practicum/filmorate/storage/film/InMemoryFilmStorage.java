@@ -12,7 +12,7 @@ import java.util.*;
 @Slf4j
 @Component
 public class InMemoryFilmStorage implements FilmStorage {
-	private final Map<Integer, Film> filmStore = new HashMap<>();
+	private final Map<Long, Film> filmStore = new HashMap<>();
 
 	private Integer currentMaxId = 0;
 
@@ -40,8 +40,6 @@ public class InMemoryFilmStorage implements FilmStorage {
 
 	@Override
 	public Film updateFilm(Film newFilmData) {
-
-
 		validateUpdateFilm(newFilmData);
 
 		Film currentFilm = filmStore.get(newFilmData.getId());
@@ -68,17 +66,32 @@ public class InMemoryFilmStorage implements FilmStorage {
 	}
 
 	@Override
-	public boolean isContain(Integer id) {
+	public boolean isContain(Long id) {
 		return filmStore.containsKey(id);
 	}
 
 	@Override
-	public Film getFilm(Integer id) {
+	public Film getFilm(Long id) {
 		if (isContain(id)) {
 			return filmStore.get(id);
 		}
 
 		throw new NotFoundException("Фильм с данным id не найден");
+	}
+
+	@Override
+	public void addLike(Long filmId, Long userId) {
+
+	}
+
+	@Override
+	public void removeLike(Long filmId, Long userId) {
+
+	}
+
+	@Override
+	public Set<Long> getLikes(Long filmId) {
+		return Set.of();
 	}
 
 	private Integer generateId() {
