@@ -12,7 +12,7 @@ import java.util.List;
 @Repository
 @RequiredArgsConstructor
 public class GenreDbStorage {
-	private JdbcTemplate jdbcTemplate;
+	private final JdbcTemplate jdbcTemplate;
 
 	public List<Genre> getAllGenre() {
 		String sql = "SELECT id, genre_name FROM genre";

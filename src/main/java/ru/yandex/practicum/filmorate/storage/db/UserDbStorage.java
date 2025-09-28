@@ -1,62 +1,82 @@
 package ru.yandex.practicum.filmorate.storage.db;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.stereotype.Repository;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.model.mapper.UserRowMapper;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
-import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.sql.Date;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.util.*;
 
-@Slf4j
 @Repository
 @Qualifier("userDbStorage")
 @RequiredArgsConstructor
 public class UserDbStorage implements UserStorage {
 	private final JdbcTemplate jdbcTemplate;
-	private Integer currentMaxId = 0;
 
 	@Override
 	public List<User> getAllUsers() {
-		String sql = "SELECT id, email, login, name, birthday FROM users";
+		String sql = """
+        SELECT
+            u.id, u.email,
+            u.login, u.name,
+            u.birthday,
+            fs.user_id2 AS friend_id
+        FROM users u
+        LEFT JOIN friendship_status fs ON fs.user_id1 = u.id
+        """;
 
-		return jdbcTemplate.query(sql, new UserRowMapper());
+		UserRowMapper userRowMapper = new UserRowMapper();
+
+		return jdbcTemplate.query(sql, (ResultSet rs) -> {
+			Map<Long, User> userMap = new HashMap<>();
+
+			while (rs.next()) {
+				Long userId = rs.getLong("id");
+				User user = userMap.get(userId);
+
+				if (user == null) {
+					user = userRowMapper.mapRow(rs, 0);
+					userMap.put(userId, user);
+				}
+
+				Long friendId = rs.getObject("friend_id", Long.class);
+				if (friendId != null) {
+					user.getFriendsList().add(friendId);
+				}
+			}
+
+			return new ArrayList<>(userMap.values());
+		});
 	}
 
 	@Override
 	public User createUser(User newUser) {
-		validateUserCreate(newUser);
+		GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
+		String sql = "INSERT INTO users (email, login, name, birthday) VALUES (?, ?, ?, ?)";
+		jdbcTemplate.update(connection -> {
+			PreparedStatement ps = connection.prepareStatement(sql, new String[]{"id"});
+			ps.setString(1, newUser.getEmail());
+			ps.setString(2, newUser.getLogin());
+			ps.setString(3, newUser.getName());
+			ps.setDate(4, Date.valueOf(newUser.getBirthday()));
+			return ps;
+		}, keyHolder);
 
-		newUser.setId(generateId());
-
-		String sql = "INSERT INTO users (id, email, login, name, birthday) VALUES (?, ?, ?, ?, ?)";
-		jdbcTemplate.update(sql,
-				newUser.getId(),
-				newUser.getEmail(),
-				newUser.getLogin(),
-				newUser.getName(),
-				newUser.getBirthday());
+		newUser.setId(keyHolder.getKeyAs(Long.class));
 
 		return newUser;
 	}
 
 	@Override
 	public User updateUser(User newUserData) {
-		if (!isContain(newUserData.getId())) {
-			throw new NotFoundException("Пользователь не найден");
-		}
-
-		validateUserUpdate(newUserData);
 		User currentDbUser = getUser(newUserData.getId());
-
 		if (newUserData.getEmail() != null) {
 			currentDbUser.setEmail(newUserData.getEmail());
 		}
@@ -83,30 +103,15 @@ public class UserDbStorage implements UserStorage {
 
 	@Override
 	public Set<Long> getUserFriends(Long id) {
-		if (isContain(id)) {
-			String sql = "SELECT user_id2 FROM friendship_status WHERE user_id1 = ?";
+		String sql = "SELECT user_id2 FROM friendship_status WHERE user_id1 = ?";
 
-			return new HashSet<>(jdbcTemplate.queryForList(sql, Long.class, id));
-		}
-
-		throw new NotFoundException("Пользователь не найден");
-	}
-
-	@Override
-	public boolean isContain(Long id) {
-		String sql = "SELECT COUNT(*) FROM users WHERE id = ?";
-
-		return jdbcTemplate.queryForObject(sql, Integer.class, id) > 0;
+		return new HashSet<>(jdbcTemplate.queryForList(sql, Long.class, id));
 	}
 
 	@Override
 	public User getUser(Long id) {
 		String sql = "SELECT id, email, login, name, birthday FROM users WHERE id = ?";
 		List<User> user = jdbcTemplate.query(sql, new UserRowMapper(), id);
-
-		if (user.isEmpty()) {
-			throw new NotFoundException("Пользователь не найден");
-		}
 
 		User currentUser = user.getFirst();
 		currentUser.setFriendsList(getUserFriends(id));
@@ -116,81 +121,32 @@ public class UserDbStorage implements UserStorage {
 
 	@Override
 	public void addFriend(Long id, Long friendId) {
-		if (isContain(id) && isContain(friendId)) {
-			String sql = "INSERT INTO friendship_status (user_id1, user_id2) VALUES (?, ?)";
-			jdbcTemplate.update(sql, id, friendId);
-
-		} else {
-			throw new NotFoundException("Пользователь не найден");
-		}
+		String sql = "INSERT INTO friendship_status (user_id1, user_id2) VALUES (?, ?)";
+		jdbcTemplate.update(sql, id, friendId);
 	}
 
 	@Override
 	public void removeFriend(Long id, Long friendId) {
-		if (isContain(id) && isContain(friendId)) {
-			String sql = "DELETE FROM friendship_status WHERE user_id1 = ? AND user_id2 = ?";
-			jdbcTemplate.update(sql, id, friendId);
-
-		} else {
-			throw new NotFoundException("Пользователь не найден");
-		}
+		String sql = "DELETE FROM friendship_status WHERE user_id1 = ? AND user_id2 = ?";
+		jdbcTemplate.update(sql, id, friendId);
 	}
 
 	@Override
 	public List<User> getAllFriends(Long id) {
-		if (isContain(id)) {
-			String sql = """
-					SELECT u.id, u.email, u.login, u.name, u.birthday
-					FROM users u
-					JOIN friendship_status fs ON u.id = fs.user_id2
-					WHERE fs.user_id1 = ?
-					""";
+		getUser(id);
+		String sql = """
+				SELECT u.id, u.email, u.login, u.name, u.birthday
+				FROM users u
+				JOIN friendship_status fs ON u.id = fs.user_id2
+				WHERE fs.user_id1 = ?
+				""";
 
-			return jdbcTemplate.query(sql, new UserRowMapper(), id);
-		}
-
-		throw new NotFoundException("Пользователь не найден");
+		return jdbcTemplate.query(sql, new UserRowMapper(), id);
 	}
 
-	private void validateUserCreate(User currentUser) {
-		if (currentUser.getName() == null) {
-			log.info("Новый пользователь с пустым именем. Вместо имени подставлен логин");
-			currentUser.setName(currentUser.getLogin());
-		}
-
-		if (currentUser.getEmail() == null || currentUser.getEmail().isBlank() || !currentUser.getEmail().contains("@")) {
-			log.warn("Ошибка валидации: Не корректный email");
-			throw new ValidationException("Email не должен быть пустым и должен указывать на сервис электронной почты");
-		}
-		if (currentUser.getLogin() == null || currentUser.getLogin().isBlank() || currentUser.getLogin().contains(" ")) {
-			log.warn("Ошибка валидации: Логин пустой или содержит пробельные символы");
-			throw new ValidationException("Логин не должен быть пустым или содержать пробелы");
-		}
-		if (currentUser.getBirthday() == null || currentUser.getBirthday().isAfter(LocalDate.now())) {
-			log.warn("Ошибка валидации: Дата рождения указана в будущем");
-			throw new ValidationException("Дата рождения не может быть в будущем");
-		}
-	}
-
-	private void validateUserUpdate(User newUserData) {
-		if (!isContain(newUserData.getId())) {
-			throw new NotFoundException("Пользователь не найден");
-		}
-		if (newUserData.getEmail() != null && (newUserData.getEmail().isBlank() || !newUserData.getEmail().contains("@"))) {
-			log.warn("Ошибка валидации: Не корректный email");
-			throw new ValidationException("Email не должен быть пустым и должен указывать на сервис электронной почты");
-		}
-		if (newUserData.getLogin() != null && (newUserData.getLogin().isBlank() || newUserData.getLogin().contains(" "))) {
-			log.warn("Ошибка валидации: Логин пустой или содержит пробельные символы");
-			throw new ValidationException("Логин не должен быть пустым или содержать пробелы");
-		}
-		if (newUserData.getBirthday() != null && newUserData.getBirthday().isAfter(LocalDate.now())) {
-			log.warn("Ошибка валидации: Дата рождения указана в будущем");
-			throw new ValidationException("Дата рождения не может быть в будущем");
-		}
-	}
-
-	private Integer generateId() {
-		return ++currentMaxId;
+	@Override
+	public boolean userExist(Long id) {
+		String sql = "SELECT EXISTS(SELECT 1 FROM users WHERE id = ?)";
+		return jdbcTemplate.queryForObject(sql, Boolean.class, id);
 	}
 }

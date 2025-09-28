@@ -12,7 +12,7 @@ import java.util.List;
 @Repository
 @RequiredArgsConstructor
 public class MpaRatingDbStorage {
-	private JdbcTemplate jdbcTemplate;
+	private final JdbcTemplate jdbcTemplate;
 
 	public List<MpaRating> getAllMpaRating() {
 		String sql = "SELECT id, rating FROM mpa_rating";

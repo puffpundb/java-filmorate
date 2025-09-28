@@ -13,8 +13,6 @@ public interface UserStorage {
 
 	Set<Long> getUserFriends(Long id);
 
-	boolean isContain(Long id);
-
 	User getUser(Long id);
 
 	void addFriend(Long id, Long friendId);
@@ -22,4 +20,6 @@ public interface UserStorage {
 	void removeFriend(Long id, Long friendId);
 
 	List<User> getAllFriends(Long id);
+
+	boolean userExist(Long id);
 }

@@ -66,13 +66,13 @@ public class InMemoryFilmStorage implements FilmStorage {
 	}
 
 	@Override
-	public boolean isContain(Long id) {
+	public boolean filmExist(Long id) {
 		return filmStore.containsKey(id);
 	}
 
 	@Override
 	public Film getFilm(Long id) {
-		if (isContain(id)) {
+		if (filmExist(id)) {
 			return filmStore.get(id);
 		}
 

@@ -7,10 +7,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class MpaRating {
 	private Integer id;
-	private String rating;
+	private String name;
 
-	public MpaRating(Integer id, String rating) {
+	public MpaRating(Integer id, String name) {
 		this.id = id;
-		this.rating = rating;
+		this.name = name;
 	}
 }

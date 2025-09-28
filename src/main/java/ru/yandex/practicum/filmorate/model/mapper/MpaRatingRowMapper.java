@@ -11,7 +11,7 @@ public class MpaRatingRowMapper implements RowMapper<MpaRating> {
 	public MpaRating mapRow(ResultSet rs, int rowNum) throws SQLException {
 		MpaRating mpaRating = new MpaRating();
 		mpaRating.setId(rs.getInt("id"));
-		mpaRating.setRating(rs.getString("rating"));
+		mpaRating.setName(rs.getString("rating"));
 
 		return mpaRating;
 	}

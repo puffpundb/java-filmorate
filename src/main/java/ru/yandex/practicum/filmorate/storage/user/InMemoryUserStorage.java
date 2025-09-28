@@ -74,10 +74,6 @@ public class InMemoryUserStorage implements  UserStorage {
 		return userDataBase.get(id).getFriendsList();
 	}
 
-	@Override
-	public boolean isContain(Long id) {
-		return userDataBase.containsKey(id);
-	}
 
 	@Override
 	public User getUser(Long id) {
@@ -101,6 +97,11 @@ public class InMemoryUserStorage implements  UserStorage {
 	@Override
 	public List<User> getAllFriends(Long id) {
 		return List.of();
+	}
+
+	@Override
+	public boolean userExist(Long id) {
+		return userDataBase.containsKey(id);
 	}
 
 	private void validateUserCreate(User currentUser) {

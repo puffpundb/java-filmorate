@@ -21,6 +21,6 @@ public class User {
 
     private LocalDate birthday;
 
-    private Set<Long> friendsList = new HashSet<>();
+    private Set<Long> friendsList;
 
 }
