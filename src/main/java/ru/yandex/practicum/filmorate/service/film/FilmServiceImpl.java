@@ -7,6 +7,9 @@ import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.Genre;
+import ru.yandex.practicum.filmorate.storage.db.GenreDbStorage;
+import ru.yandex.practicum.filmorate.storage.db.MpaRatingDbStorage;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
@@ -18,25 +21,35 @@ import java.util.Set;
 @Service
 public class FilmServiceImpl implements FilmService {
 	@Qualifier("filmDbStorage")
-	private FilmStorage filmDataBase;
+	private final FilmStorage filmDataBase;
+
 	@Qualifier("userDbStorage")
-	private UserStorage userDataBase;
+	private final UserStorage userDataBase;
+
+	private final MpaRatingDbStorage mpaRatingDbStorage;
+	private final GenreDbStorage genreDbStorage;
 
 	private final String NOT_FOUND = "Фильм не найден";
+	private final String USER_NOT_FOUND = "Пользователь не найден";
+	private final String MPA_NOT_FOUND = "Рейтинг не найден";
+	private final String GENRE_NOT_FOUND = "Жанр не найден";
 
 	@Autowired
-	public FilmServiceImpl(@Qualifier("filmDbStorage") FilmStorage filmDataBase, @Qualifier("userDbStorage") UserStorage userDataBase) {
+	public FilmServiceImpl(@Qualifier("filmDbStorage") FilmStorage filmDataBase, @Qualifier("userDbStorage") UserStorage userDataBase,
+						   MpaRatingDbStorage mpaRatingDbStorage, GenreDbStorage genreDbStorage) {
 		this.filmDataBase = filmDataBase;
 		this.userDataBase = userDataBase;
+		this.mpaRatingDbStorage = mpaRatingDbStorage;
+		this.genreDbStorage = genreDbStorage;
 	}
 
 	@Override
 	public void liked(Long filmId, Long userId) {
-		if (filmDataBase.filmExist(filmId)) {
+		if (!filmDataBase.filmExist(filmId)) {
 			throw new NotFoundException(NOT_FOUND);
 		}
-		if (userDataBase.userExist(userId)) {
-			throw new NotFoundException("Пользователь не найден");
+		if (!userDataBase.userExist(userId)) {
+			throw new NotFoundException(USER_NOT_FOUND);
 		}
 
 		filmDataBase.addLike(filmId, userId);
@@ -44,11 +57,11 @@ public class FilmServiceImpl implements FilmService {
 
 	@Override
 	public void disliked(Long filmId, Long userId) {
-		if (filmDataBase.filmExist(filmId)) {
+		if (!filmDataBase.filmExist(filmId)) {
 			throw new NotFoundException(NOT_FOUND);
 		}
-		if (userDataBase.userExist(userId)) {
-			throw new NotFoundException("Пользователь не найден");
+		if (!userDataBase.userExist(userId)) {
+			throw new NotFoundException(USER_NOT_FOUND);
 		}
 
 		filmDataBase.removeLike(filmId, userId);
@@ -60,7 +73,7 @@ public class FilmServiceImpl implements FilmService {
 			throw new ValidationException("Передан отрицательный параметр");
 		}
 
-		return filmDataBase.getAllFilm().stream()
+		return filmDataBase.getAllFilms().stream()
 				.sorted()
 				.limit(count)
 				.toList();
@@ -68,19 +81,44 @@ public class FilmServiceImpl implements FilmService {
 
 	@Override
 	public List<Film> getAllFilm() {
-		return filmDataBase.getAllFilm();
+		return filmDataBase.getAllFilms();
 	}
 
 	@Override
 	public Film createFilm(Film newFilm) {
-		validateCreateFilm(newFilm);
+		if (newFilm.getMpa() != null) {
+			if (!mpaRatingDbStorage.mpaExist(newFilm.getMpa().getId())) {
+				throw new NotFoundException(MPA_NOT_FOUND);
+			}
+		}
 
+		if (newFilm.getGenres() != null) {
+			for (Genre genre : newFilm.getGenres()) {
+				if (genre != null && !genreDbStorage.genreExist(genre.getId())) {
+					throw new NotFoundException(GENRE_NOT_FOUND);
+				}
+			}
+		}
+
+		validateCreateFilm(newFilm);
 		return filmDataBase.createFilm(newFilm);
 	}
 
 	@Override
 	public Film updateFilm(Film newFilmData) {
 		if (filmDataBase.filmExist(newFilmData.getId())) {
+			if (newFilmData.getMpa() != null && !mpaRatingDbStorage.mpaExist(newFilmData.getMpa().getId())) {
+				throw new NotFoundException(MPA_NOT_FOUND);
+			}
+
+			if (newFilmData.getGenres() != null) {
+				for (Genre genre : newFilmData.getGenres()) {
+					if (genre != null && !genreDbStorage.genreExist(genre.getId())) {
+						throw new NotFoundException(GENRE_NOT_FOUND);
+					}
+				}
+			}
+
 			validateUpdateFilm(newFilmData);
 			return filmDataBase.updateFilm(newFilmData);
 		}
@@ -92,6 +130,15 @@ public class FilmServiceImpl implements FilmService {
 	public Set<Long> getLikes(Long id) {
 		if (filmDataBase.filmExist(id)) {
 			return filmDataBase.getLikes(id);
+		}
+
+		throw new NotFoundException(NOT_FOUND);
+	}
+
+	@Override
+	public Film getFilm(Long id) {
+		if (filmDataBase.filmExist(id)) {
+			return filmDataBase.getFilm(id);
 		}
 
 		throw new NotFoundException(NOT_FOUND);

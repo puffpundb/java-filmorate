@@ -64,14 +64,15 @@ public class UserDbStorage implements UserStorage {
 			PreparedStatement ps = connection.prepareStatement(sql, new String[]{"id"});
 			ps.setString(1, newUser.getEmail());
 			ps.setString(2, newUser.getLogin());
-			ps.setString(3, newUser.getName());
+			if (newUser.getName() == null) ps.setString(3, newUser.getLogin());
+			else ps.setString(3, newUser.getName());
 			ps.setDate(4, Date.valueOf(newUser.getBirthday()));
 			return ps;
 		}, keyHolder);
 
 		newUser.setId(keyHolder.getKeyAs(Long.class));
 
-		return newUser;
+		return getUser(newUser.getId());
 	}
 
 	@Override
@@ -104,7 +105,6 @@ public class UserDbStorage implements UserStorage {
 	@Override
 	public Set<Long> getUserFriends(Long id) {
 		String sql = "SELECT user_id2 FROM friendship_status WHERE user_id1 = ?";
-
 		return new HashSet<>(jdbcTemplate.queryForList(sql, Long.class, id));
 	}
 

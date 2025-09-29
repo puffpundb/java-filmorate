@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Set;
 
 public interface FilmStorage {
-	List<Film> getAllFilm();
+	List<Film> getAllFilms();
 
 	Film createFilm(Film newFilm);
 

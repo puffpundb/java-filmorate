@@ -17,7 +17,7 @@ public class InMemoryFilmStorage implements FilmStorage {
 	private Integer currentMaxId = 0;
 
 	@Override
-	public List<Film> getAllFilm() {
+	public List<Film> getAllFilms() {
 		return new ArrayList<>(filmStore.values());
 	}
 

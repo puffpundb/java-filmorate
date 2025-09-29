@@ -3,7 +3,6 @@ package ru.yandex.practicum.filmorate.storage.db;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.MpaRating;
 import ru.yandex.practicum.filmorate.model.mapper.MpaRatingRowMapper;
 
@@ -16,22 +15,16 @@ public class MpaRatingDbStorage {
 
 	public List<MpaRating> getAllMpaRating() {
 		String sql = "SELECT id, rating FROM mpa_rating";
-
 		return jdbcTemplate.query(sql, new MpaRatingRowMapper());
 	}
 
 	public MpaRating getMpaRatingById(int id) {
-		if (isContain(id)) {
-			String sql = "SELECT id, rating FROM mpa_rating WHERE id = ?";
-			return jdbcTemplate.queryForObject(sql, new MpaRatingRowMapper(), id);
-		}
-
-		throw new NotFoundException("Рейтинг не найден");
+		String sql = "SELECT id, rating FROM mpa_rating WHERE id = ?";
+		return jdbcTemplate.queryForObject(sql, new MpaRatingRowMapper(), id);
 	}
 
-	private boolean isContain(int id) {
-		String sql = "SELECT COUNT(*) FROM mpa_rating WHERE id = ?";
-
-		return jdbcTemplate.queryForObject(sql, Integer.class, id) > 0;
+	public boolean mpaExist(int id) {
+		String sql = "SELECT EXISTS(SELECT 1 FROM mpa_rating WHERE id = ?)";
+		return jdbcTemplate.queryForObject(sql, Boolean.class, id);
 	}
 }

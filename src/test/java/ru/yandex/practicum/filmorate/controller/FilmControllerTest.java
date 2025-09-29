@@ -3,11 +3,14 @@ package ru.yandex.practicum.filmorate.controller;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.jdbc.core.JdbcTemplate;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.service.film.FilmService;
 import ru.yandex.practicum.filmorate.service.film.FilmServiceImpl;
+import ru.yandex.practicum.filmorate.storage.db.GenreDbStorage;
+import ru.yandex.practicum.filmorate.storage.db.MpaRatingDbStorage;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.film.InMemoryFilmStorage;
 import ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage;
@@ -25,7 +28,10 @@ class FilmControllerTest {
     void beforeEach() {
         FilmStorage filmStore = new InMemoryFilmStorage();
         UserStorage userStore = new InMemoryUserStorage();
-        FilmService filmService = new FilmServiceImpl(filmStore, userStore);
+        MpaRatingDbStorage mpaRatingDbStorage = new MpaRatingDbStorage(new JdbcTemplate());
+        GenreDbStorage genreDbStorage = new GenreDbStorage(new JdbcTemplate());
+
+        FilmService filmService = new FilmServiceImpl(filmStore, userStore, mpaRatingDbStorage, genreDbStorage);
         filmController = new FilmController(filmService);
     }
 
@@ -132,7 +138,7 @@ class FilmControllerTest {
             filmController.updateFilm(film);
         });
 
-        assertTrue(exception.getMessage().contains("Фильм с таким id не найден"));
+        assertTrue(exception.getMessage().contains("Фильм не найден"));
     }
 
     @Test

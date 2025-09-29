@@ -148,7 +148,7 @@ class UserControllerTest {
             userController.updateUser(user);
         });
 
-        assertTrue(exception.getMessage().contains("Пользователь с таким id не найден"));
+        assertTrue(exception.getMessage().contains("Пользователь не найден"));
     }
 
     @Test

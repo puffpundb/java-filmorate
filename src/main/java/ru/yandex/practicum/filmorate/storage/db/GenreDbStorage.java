@@ -3,7 +3,6 @@ package ru.yandex.practicum.filmorate.storage.db;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.mapper.GenreRowMapper;
 
@@ -21,23 +20,17 @@ public class GenreDbStorage {
 	}
 
 	public Genre getGenreById(int id) {
-		if (isContain(id)) {
-			String sql = "SELECT id, genre_name FROM genre WHERE id = ?";
-			return jdbcTemplate.queryForObject(sql, new GenreRowMapper(), id);
-		}
-
-		throw new NotFoundException("Жанр не найден");
+		String sql = "SELECT id, genre_name FROM genre WHERE id = ?";
+		return jdbcTemplate.queryForObject(sql, new GenreRowMapper(), id);
 	}
 
 	public List<Genre> getGenresByFilmId(Long filmId) {
 		String sql = "SELECT g.id, g.name FROM genres g JOIN film_genres fg ON g.id = fg.genre_id WHERE fg.film_id = ?";
-
 		return jdbcTemplate.query(sql, new GenreRowMapper(), filmId);
 	}
 
-	private boolean isContain(int id) {
-		String sql = "SELECT COUNT(*) FROM genre WHERE id = ?";
-
-		return jdbcTemplate.queryForObject(sql, Integer.class, id) > 0;
+	public boolean genreExist(int id) {
+		String sql = "SELECT EXISTS(SELECT 1 FROM genre WHERE id = ?)";
+		return jdbcTemplate.queryForObject(sql, Boolean.class, id);
 	}
 }

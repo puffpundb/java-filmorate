@@ -39,17 +39,17 @@ public class FilmDbStorageTest {
 
 		MpaRating mpa = new MpaRating();
 		mpa.setId(1);
-		film.setMpaRating(mpa);
+		film.setMpa(mpa);
 
 		Set<Genre> genres = new HashSet<>();
 
 		Genre comedy = new Genre();
 		comedy.setId(1);
-		comedy.setGenre("Комедия");
+		comedy.setName("Комедия");
 
 		Genre drama = new Genre();
 		drama.setId(2);
-		drama.setGenre("Драма");
+		drama.setName("Драма");
 
 		genres.add(comedy);
 		genres.add(drama);
@@ -70,7 +70,6 @@ public class FilmDbStorageTest {
 	@Test
 	public void shouldReturnRightFilm() {
 		User user = new User();
-		user.setId(1L);
 		user.setEmail("test@user.com");
 		user.setLogin("testuser");
 		user.setBirthday(LocalDate.of(1990, 1, 1));
@@ -78,8 +77,7 @@ public class FilmDbStorageTest {
 
 		Film film = createTestFilm();
 		Film createdFilm = filmStorage.createFilm(film);
-		Long userId = 1L;
-		filmStorage.addLike(createdFilm.getId(), userId);
+		filmStorage.addLike(createdFilm.getId(), userStorage.getUser(user.getId()).getId());
 
 		Film fromDb = filmStorage.getFilm(createdFilm.getId());
 
@@ -88,8 +86,8 @@ public class FilmDbStorageTest {
 		assertThat(fromDb.getDuration()).isEqualTo(createdFilm.getDuration());
 		assertThat(fromDb.getReleaseDate()).isEqualTo(createdFilm.getReleaseDate());
 		assertThat(fromDb.getGenres()).isEqualTo(createdFilm.getGenres());
-		assertThat(fromDb.getMpaRating().getId()).isEqualTo(createdFilm.getMpaRating().getId());
-		assertThat(fromDb.getUsersLike().contains(userId));
+		assertThat(fromDb.getMpa().getId()).isEqualTo(createdFilm.getMpa().getId());
+		assertThat(fromDb.getUsersLike().contains(userStorage.getUser(user.getId()).getId()));
 	}
 
 	@Test
@@ -97,7 +95,7 @@ public class FilmDbStorageTest {
 		filmStorage.createFilm(createTestFilm());
 		filmStorage.createFilm(createTestFilm());
 
-		List<Film> allFilms = filmStorage.getAllFilm();
+		List<Film> allFilms = filmStorage.getAllFilms();
 
 		assertThat(allFilms).hasSize(2);
 	}
@@ -109,7 +107,7 @@ public class FilmDbStorageTest {
 		Film updateData = new Film();
 		updateData.setId(film.getId());
 		updateData.setName("Updated Name");
-		updateData.setMpaRating(new MpaRating(4, "R"));
+		updateData.setMpa(new MpaRating(4, "R"));
 		Set<Genre> newGenre = new HashSet<>();
 		newGenre.add(new Genre(6, "Боевик"));
 		updateData.setGenres(newGenre);
@@ -124,7 +122,7 @@ public class FilmDbStorageTest {
 		assertThat(updated.getDescription()).isEqualTo("zxc");
 		assertThat(updated.getReleaseDate()).isEqualTo(LocalDate.of(2000, 1, 2));
 		assertThat(updated.getDuration()).isEqualTo(1);
-		assertThat(updated.getMpaRating().getId()).isEqualTo(4);
+		assertThat(updated.getMpa().getId()).isEqualTo(4);
 		assertThat(updated.getGenres().size()).isEqualTo(1);
 	}
 }
