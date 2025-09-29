@@ -18,7 +18,7 @@ public class UserServiceImpl implements UserService {
 	@Qualifier("userDbStorage")
 	private UserStorage userDataBase;
 
-	private final String NOT_FOUND = "Пользователь не найден";
+	private final String notFound = "Пользователь не найден";
 
 	@Autowired
 	public UserServiceImpl(@Qualifier("userDbStorage") UserStorage userDataBase) {
@@ -36,7 +36,7 @@ public class UserServiceImpl implements UserService {
 					.toList();
 		}
 
-		throw new NotFoundException(NOT_FOUND);
+		throw new NotFoundException(notFound);
 	}
 
 	@Override
@@ -46,7 +46,7 @@ public class UserServiceImpl implements UserService {
 			return userDataBase.getAllFriends(userId);
 		}
 
-		throw new NotFoundException(NOT_FOUND);
+		throw new NotFoundException(notFound);
 	}
 
 	@Override
@@ -56,7 +56,7 @@ public class UserServiceImpl implements UserService {
 			return userDataBase.getAllFriends(userId);
 		}
 
-		throw new NotFoundException(NOT_FOUND);
+		throw new NotFoundException(notFound);
 	}
 
 	@Override
@@ -94,7 +94,7 @@ public class UserServiceImpl implements UserService {
 			return userDataBase.updateUser(newUserData);
 		}
 
-		throw new NotFoundException(NOT_FOUND);
+		throw new NotFoundException(notFound);
 	}
 
 	private void validateUserCreate(User currentUser) {

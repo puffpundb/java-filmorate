@@ -29,10 +29,10 @@ public class FilmServiceImpl implements FilmService {
 	private final MpaRatingDbStorage mpaRatingDbStorage;
 	private final GenreDbStorage genreDbStorage;
 
-	private final String NOT_FOUND = "Фильм не найден";
-	private final String USER_NOT_FOUND = "Пользователь не найден";
-	private final String MPA_NOT_FOUND = "Рейтинг не найден";
-	private final String GENRE_NOT_FOUND = "Жанр не найден";
+	private final String notFound = "Фильм не найден";
+	private final String userNotFound = "Пользователь не найден";
+	private final String mpaNotFound = "Рейтинг не найден";
+	private final String genreNotFound = "Жанр не найден";
 
 	@Autowired
 	public FilmServiceImpl(@Qualifier("filmDbStorage") FilmStorage filmDataBase, @Qualifier("userDbStorage") UserStorage userDataBase,
@@ -46,10 +46,10 @@ public class FilmServiceImpl implements FilmService {
 	@Override
 	public void liked(Long filmId, Long userId) {
 		if (!filmDataBase.filmExist(filmId)) {
-			throw new NotFoundException(NOT_FOUND);
+			throw new NotFoundException(notFound);
 		}
 		if (!userDataBase.userExist(userId)) {
-			throw new NotFoundException(USER_NOT_FOUND);
+			throw new NotFoundException(userNotFound);
 		}
 
 		filmDataBase.addLike(filmId, userId);
@@ -58,10 +58,10 @@ public class FilmServiceImpl implements FilmService {
 	@Override
 	public void disliked(Long filmId, Long userId) {
 		if (!filmDataBase.filmExist(filmId)) {
-			throw new NotFoundException(NOT_FOUND);
+			throw new NotFoundException(notFound);
 		}
 		if (!userDataBase.userExist(userId)) {
-			throw new NotFoundException(USER_NOT_FOUND);
+			throw new NotFoundException(userNotFound);
 		}
 
 		filmDataBase.removeLike(filmId, userId);
@@ -88,14 +88,14 @@ public class FilmServiceImpl implements FilmService {
 	public Film createFilm(Film newFilm) {
 		if (newFilm.getMpa() != null) {
 			if (!mpaRatingDbStorage.mpaExist(newFilm.getMpa().getId())) {
-				throw new NotFoundException(MPA_NOT_FOUND);
+				throw new NotFoundException(mpaNotFound);
 			}
 		}
 
 		if (newFilm.getGenres() != null) {
 			for (Genre genre : newFilm.getGenres()) {
 				if (genre != null && !genreDbStorage.genreExist(genre.getId())) {
-					throw new NotFoundException(GENRE_NOT_FOUND);
+					throw new NotFoundException(genreNotFound);
 				}
 			}
 		}
@@ -108,13 +108,13 @@ public class FilmServiceImpl implements FilmService {
 	public Film updateFilm(Film newFilmData) {
 		if (filmDataBase.filmExist(newFilmData.getId())) {
 			if (newFilmData.getMpa() != null && !mpaRatingDbStorage.mpaExist(newFilmData.getMpa().getId())) {
-				throw new NotFoundException(MPA_NOT_FOUND);
+				throw new NotFoundException(mpaNotFound);
 			}
 
 			if (newFilmData.getGenres() != null) {
 				for (Genre genre : newFilmData.getGenres()) {
 					if (genre != null && !genreDbStorage.genreExist(genre.getId())) {
-						throw new NotFoundException(GENRE_NOT_FOUND);
+						throw new NotFoundException(genreNotFound);
 					}
 				}
 			}
@@ -123,7 +123,7 @@ public class FilmServiceImpl implements FilmService {
 			return filmDataBase.updateFilm(newFilmData);
 		}
 
-		throw new NotFoundException(NOT_FOUND);
+		throw new NotFoundException(notFound);
 	}
 
 	@Override
@@ -132,7 +132,7 @@ public class FilmServiceImpl implements FilmService {
 			return filmDataBase.getLikes(id);
 		}
 
-		throw new NotFoundException(NOT_FOUND);
+		throw new NotFoundException(notFound);
 	}
 
 	@Override
@@ -141,7 +141,7 @@ public class FilmServiceImpl implements FilmService {
 			return filmDataBase.getFilm(id);
 		}
 
-		throw new NotFoundException(NOT_FOUND);
+		throw new NotFoundException(notFound);
 	}
 
 
