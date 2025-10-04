@@ -38,8 +38,9 @@ public class UserDbStorage implements UserStorage {
 			if (newUser.getName() == null) {
 				ps.setString(3, newUser.getLogin());
 				newUser.setName(newUser.getLogin());
+			} else {
+				ps.setString(3, newUser.getName());
 			}
-			else ps.setString(3, newUser.getName());
 			ps.setDate(4, Date.valueOf(newUser.getBirthday()));
 			return ps;
 		}, keyHolder);
