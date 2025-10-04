@@ -7,6 +7,7 @@ import ru.yandex.practicum.filmorate.model.MpaRating;
 import ru.yandex.practicum.filmorate.storage.db.MpaRatingDbStorage;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @AllArgsConstructor
@@ -20,10 +21,11 @@ public class MpaServiceImpl implements MpaService {
 
 	@Override
 	public MpaRating getMpaRatingById(int id) {
-		if (mpaRatingDbStorage.mpaExist(id)) {
-			return mpaRatingDbStorage.getMpaRatingById(id);
+		Optional<MpaRating> mpaRatingOptional = mpaRatingDbStorage.getMpaRatingById(id);
+		if (mpaRatingOptional.isPresent()) {
+			return mpaRatingOptional.get();
 		}
 
-		throw new NotFoundException("Жанр не найден");
+		throw new NotFoundException(String.format("Рейтинг с id = %d не найден", id));
 	}
 }

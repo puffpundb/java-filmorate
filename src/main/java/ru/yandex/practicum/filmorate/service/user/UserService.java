@@ -9,7 +9,7 @@ public interface UserService {
 
 	List<User> addToFriendsList(Long userId, Long friendId);
 
-	List<User> deleteFromFriendsList(Long userId, Long friendId);
+	void deleteFromFriendsList(Long userId, Long friendId);
 
 	List<User> getCommonFriends(Long userId, Long friendId);
 

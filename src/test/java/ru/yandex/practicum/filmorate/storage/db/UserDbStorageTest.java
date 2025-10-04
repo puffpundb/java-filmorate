@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @JdbcTest
 @AutoConfigureTestDatabase
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
-@Import({FilmDbStorage.class, UserDbStorage.class})
+@Import({UserDbStorage.class})
 @Sql(scripts = "/schema.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 public class UserDbStorageTest {
 	private final UserDbStorage userStorage;
@@ -36,7 +36,7 @@ public class UserDbStorageTest {
 	public void shouldSaveAndGetUserToDb() {
 		User user = createBaseUser();
 		User created = userStorage.createUser(user);
-		User fromDb = userStorage.getUser(created.getId());
+		User fromDb = userStorage.getUser(created.getId()).get();
 
 		assertThat(fromDb.getId()).isEqualTo(created.getId());
 		assertThat(fromDb.getEmail()).isEqualTo(user.getEmail());
@@ -67,7 +67,7 @@ public class UserDbStorageTest {
 
 		userStorage.updateUser(updateData);
 
-		User updated = userStorage.getUser(user.getId());
+		User updated = userStorage.getUser(user.getId()).get();
 
 		assertThat(updated.getEmail()).isEqualTo("updated@user.com");
 		assertThat(updated.getLogin()).isEqualTo("newlogin");
@@ -82,8 +82,11 @@ public class UserDbStorageTest {
 
 		userStorage.addFriend(user1.getId(), user2.getId());
 
-		Set<Long> friends = userStorage.getUserFriends(user1.getId());
-		assertThat(friends).contains(user2.getId());
+		List<User> friends = userStorage.getUserFriends(user1.getId());
+		//assertThat(friends).contains(user2);
+		assertThat(friends)
+				.extracting(User::getId)
+				.contains(user2.getId());
 	}
 
 	@Test
@@ -94,8 +97,8 @@ public class UserDbStorageTest {
 		userStorage.addFriend(user1.getId(), user2.getId());
 		userStorage.removeFriend(user1.getId(), user2.getId());
 
-		Set<Long> friends = userStorage.getUserFriends(user1.getId());
-		assertThat(friends).doesNotContain(user2.getId());
+		List<User> friends = userStorage.getUserFriends(user1.getId());
+		assertThat(friends).doesNotContain(user2);
 	}
 
 	@Test

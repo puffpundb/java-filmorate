@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @JdbcTest
 @AutoConfigureTestDatabase
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
-@Import({FilmDbStorage.class, UserDbStorage.class})
+@Import({FilmDbStorage.class, UserDbStorage.class, GenreDbStorage.class, MpaRatingDbStorage.class})
 @Sql(scripts = "/schema.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 public class FilmDbStorageTest {
 	private final FilmStorage filmStorage;
@@ -61,8 +61,8 @@ public class FilmDbStorageTest {
 	@Test
 	public void shouldCreateAndReturnFilm() {
 		Film film = createTestFilm();
-		Film createdFilm = filmStorage.createFilm(film);
-		Film fromDb = filmStorage.getFilm(createdFilm.getId());
+		Film createdFilm = filmStorage.createFilm(film).get();
+		Film fromDb = filmStorage.getFilm(createdFilm.getId()).get();
 
 		assertThat(fromDb.getId()).isEqualTo(createdFilm.getId());
 	}
@@ -76,10 +76,10 @@ public class FilmDbStorageTest {
 		userStorage.createUser(user);
 
 		Film film = createTestFilm();
-		Film createdFilm = filmStorage.createFilm(film);
-		filmStorage.addLike(createdFilm.getId(), userStorage.getUser(user.getId()).getId());
+		Film createdFilm = filmStorage.createFilm(film).get();
+		filmStorage.addLike(createdFilm.getId(), userStorage.getUser(user.getId()).get().getId());
 
-		Film fromDb = filmStorage.getFilm(createdFilm.getId());
+		Film fromDb = filmStorage.getFilm(createdFilm.getId()).get();
 
 		assertThat(fromDb.getName()).isEqualTo(createdFilm.getName());
 		assertThat(fromDb.getDescription()).isEqualTo(createdFilm.getDescription());
@@ -87,7 +87,7 @@ public class FilmDbStorageTest {
 		assertThat(fromDb.getReleaseDate()).isEqualTo(createdFilm.getReleaseDate());
 		assertThat(fromDb.getGenres()).isEqualTo(createdFilm.getGenres());
 		assertThat(fromDb.getMpa().getId()).isEqualTo(createdFilm.getMpa().getId());
-		assertThat(fromDb.getUsersLike().contains(userStorage.getUser(user.getId()).getId()));
+		assertThat(fromDb.getUsersLike().contains(userStorage.getUser(user.getId()).get().getId()));
 	}
 
 	@Test
@@ -102,7 +102,7 @@ public class FilmDbStorageTest {
 
 	@Test
 	public void shouldRightUpdateFilm() {
-		Film film = filmStorage.createFilm(createTestFilm());
+		Film film = filmStorage.createFilm(createTestFilm()).get();
 
 		Film updateData = new Film();
 		updateData.setId(film.getId());
@@ -116,7 +116,7 @@ public class FilmDbStorageTest {
 		updateData.setReleaseDate(LocalDate.of(2000, 1, 2));
 
 		filmStorage.updateFilm(updateData);
-		Film updated = filmStorage.getFilm(film.getId());
+		Film updated = filmStorage.getFilm(film.getId()).get();
 
 		assertThat(updated.getName()).isEqualTo("Updated Name");
 		assertThat(updated.getDescription()).isEqualTo("zxc");

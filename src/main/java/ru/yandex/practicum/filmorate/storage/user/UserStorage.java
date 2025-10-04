@@ -9,17 +9,17 @@ public interface UserStorage {
 
 	User createUser(User newUser);
 
-	User updateUser(User newUserData);
+	Optional<User> updateUser(User newUserData);
 
-	Set<Long> getUserFriends(Long id);
+	List<User> getUserFriends(Long id);
 
-	User getUser(Long id);
+	Optional<User> getUser(Long id);
 
 	void addFriend(Long id, Long friendId);
 
-	void removeFriend(Long id, Long friendId);
+	int removeFriend(Long id, Long friendId);
 
 	List<User> getAllFriends(Long id);
 
-	boolean userExist(Long id);
+	Optional<List<User>> getCommonFriends(Long userId, Long friendId);
 }

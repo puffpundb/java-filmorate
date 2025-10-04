@@ -2,6 +2,8 @@ package ru.yandex.practicum.filmorate.storage.db;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.stereotype.Repository;
@@ -22,38 +24,8 @@ public class UserDbStorage implements UserStorage {
 
 	@Override
 	public List<User> getAllUsers() {
-		String sql = """
-        SELECT
-            u.id, u.email,
-            u.login, u.name,
-            u.birthday,
-            fs.user_id2 AS friend_id
-        FROM users u
-        LEFT JOIN friendship_status fs ON fs.user_id1 = u.id
-        """;
-
-		UserRowMapper userRowMapper = new UserRowMapper();
-
-		return jdbcTemplate.query(sql, (ResultSet rs) -> {
-			Map<Long, User> userMap = new HashMap<>();
-
-			while (rs.next()) {
-				Long userId = rs.getLong("id");
-				User user = userMap.get(userId);
-
-				if (user == null) {
-					user = userRowMapper.mapRow(rs, 0);
-					userMap.put(userId, user);
-				}
-
-				Long friendId = rs.getObject("friend_id", Long.class);
-				if (friendId != null) {
-					user.getFriendsList().add(friendId);
-				}
-			}
-
-			return new ArrayList<>(userMap.values());
-		});
+		String sql = "SELECT * FROM users";
+		return jdbcTemplate.query(sql, new UserRowMapper());
 	}
 
 	@Override
@@ -64,7 +36,10 @@ public class UserDbStorage implements UserStorage {
 			PreparedStatement ps = connection.prepareStatement(sql, new String[]{"id"});
 			ps.setString(1, newUser.getEmail());
 			ps.setString(2, newUser.getLogin());
-			if (newUser.getName() == null) ps.setString(3, newUser.getLogin());
+			if (newUser.getName() == null) {
+				ps.setString(3, newUser.getLogin());
+				newUser.setName(newUser.getLogin());
+			}
 			else ps.setString(3, newUser.getName());
 			ps.setDate(4, Date.valueOf(newUser.getBirthday()));
 			return ps;
@@ -72,12 +47,17 @@ public class UserDbStorage implements UserStorage {
 
 		newUser.setId(keyHolder.getKeyAs(Long.class));
 
-		return getUser(newUser.getId());
+		return newUser;
 	}
 
 	@Override
-	public User updateUser(User newUserData) {
-		User currentDbUser = getUser(newUserData.getId());
+	public Optional<User> updateUser(User newUserData) {
+		Optional<User> optionalUser = getUser(newUserData.getId());
+		if (optionalUser.isEmpty()) {
+			return optionalUser;
+		}
+
+		User currentDbUser = optionalUser.get();
 		if (newUserData.getEmail() != null) {
 			currentDbUser.setEmail(newUserData.getEmail());
 		}
@@ -99,36 +79,54 @@ public class UserDbStorage implements UserStorage {
 				currentDbUser.getBirthday(),
 				currentDbUser.getId());
 
-		return currentDbUser;
+		return Optional.of(currentDbUser);
 	}
 
 	@Override
-	public Set<Long> getUserFriends(Long id) {
-		String sql = "SELECT user_id2 FROM friendship_status WHERE user_id1 = ?";
-		return new HashSet<>(jdbcTemplate.queryForList(sql, Long.class, id));
+	public List<User> getUserFriends(Long userId) {
+		String sql = """
+        SELECT
+            u.id,
+            u.email,
+            u.login,
+            u.name,
+            u.birthday
+        FROM friendship_status fs
+        JOIN users u ON fs.user_id2 = u.id
+        WHERE fs.user_id1 = ?
+        """;
+
+		return jdbcTemplate.query(sql, new UserRowMapper(), userId);
 	}
 
 	@Override
-	public User getUser(Long id) {
+	public Optional<User> getUser(Long id) {
 		String sql = "SELECT id, email, login, name, birthday FROM users WHERE id = ?";
-		List<User> user = jdbcTemplate.query(sql, new UserRowMapper(), id);
+		String friendsSql = "SELECT user_id2 FROM friendship_status WHERE user_id1 = ?";
 
-		User currentUser = user.getFirst();
-		currentUser.setFriendsList(getUserFriends(id));
+		User user;
+		try {
+			user = jdbcTemplate.queryForObject(sql, new UserRowMapper(), id);
+			Set<Long> friendsId = new HashSet<>(jdbcTemplate.queryForList(friendsSql, Long.class, id));
 
-		return currentUser;
+			user.setFriendsList(friendsId);
+		} catch (EmptyResultDataAccessException e) {
+			return Optional.empty();
+		}
+
+		return Optional.of(user);
 	}
 
 	@Override
-	public void addFriend(Long id, Long friendId) {
+	public void addFriend(Long id, Long friendId) throws DataIntegrityViolationException {
 		String sql = "INSERT INTO friendship_status (user_id1, user_id2) VALUES (?, ?)";
 		jdbcTemplate.update(sql, id, friendId);
 	}
 
 	@Override
-	public void removeFriend(Long id, Long friendId) {
+	public int removeFriend(Long id, Long friendId) {
 		String sql = "DELETE FROM friendship_status WHERE user_id1 = ? AND user_id2 = ?";
-		jdbcTemplate.update(sql, id, friendId);
+		return jdbcTemplate.update(sql, id, friendId);
 	}
 
 	@Override
@@ -145,8 +143,25 @@ public class UserDbStorage implements UserStorage {
 	}
 
 	@Override
-	public boolean userExist(Long id) {
-		String sql = "SELECT EXISTS(SELECT 1 FROM users WHERE id = ?)";
-		return jdbcTemplate.queryForObject(sql, Boolean.class, id);
+	public Optional<List<User>> getCommonFriends(Long userId, Long friendId) {
+		String commonFriendsSql = """
+        SELECT
+            u.id,
+            u.email,
+            u.login,
+            u.name,
+            u.birthday
+        FROM users u
+        JOIN friendship_status fs1 ON u.id = fs1.user_id2
+        JOIN friendship_status fs2 ON u.id = fs2.user_id2
+        WHERE fs1.user_id1 = ? AND fs2.user_id1 = ?
+        ORDER BY u.id
+        """;
+
+		try {
+			return Optional.of(jdbcTemplate.query(commonFriendsSql, new UserRowMapper(), userId, friendId));
+		} catch (EmptyResultDataAccessException e) {
+			return Optional.empty();
+		}
 	}
 }

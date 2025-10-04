@@ -3,67 +3,37 @@ package ru.yandex.practicum.filmorate.service.film;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.model.Genre;
-import ru.yandex.practicum.filmorate.storage.db.GenreDbStorage;
-import ru.yandex.practicum.filmorate.storage.db.MpaRatingDbStorage;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
-import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 import java.time.LocalDate;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @Slf4j
 @Service
 public class FilmServiceImpl implements FilmService {
-	@Qualifier("filmDbStorage")
 	private final FilmStorage filmDataBase;
 
-	@Qualifier("userDbStorage")
-	private final UserStorage userDataBase;
-
-	private final MpaRatingDbStorage mpaRatingDbStorage;
-	private final GenreDbStorage genreDbStorage;
-
-	private final String notFound = "Фильм не найден";
-	private final String userNotFound = "Пользователь не найден";
-	private final String mpaNotFound = "Рейтинг не найден";
-	private final String genreNotFound = "Жанр не найден";
-
 	@Autowired
-	public FilmServiceImpl(@Qualifier("filmDbStorage") FilmStorage filmDataBase, @Qualifier("userDbStorage") UserStorage userDataBase,
-						   MpaRatingDbStorage mpaRatingDbStorage, GenreDbStorage genreDbStorage) {
+	public FilmServiceImpl(@Qualifier("filmDbStorage") FilmStorage filmDataBase) {
 		this.filmDataBase = filmDataBase;
-		this.userDataBase = userDataBase;
-		this.mpaRatingDbStorage = mpaRatingDbStorage;
-		this.genreDbStorage = genreDbStorage;
 	}
 
 	@Override
 	public void liked(Long filmId, Long userId) {
-		if (!filmDataBase.filmExist(filmId)) {
-			throw new NotFoundException(notFound);
+		try {
+			filmDataBase.addLike(filmId, userId);
+		} catch (DataIntegrityViolationException e) {
+			throw new NotFoundException(String.format("Не найден пользователь с id = %d или фильм с id = %d", userId, filmId));
 		}
-		if (!userDataBase.userExist(userId)) {
-			throw new NotFoundException(userNotFound);
-		}
-
-		filmDataBase.addLike(filmId, userId);
 	}
 
 	@Override
 	public void disliked(Long filmId, Long userId) {
-		if (!filmDataBase.filmExist(filmId)) {
-			throw new NotFoundException(notFound);
-		}
-		if (!userDataBase.userExist(userId)) {
-			throw new NotFoundException(userNotFound);
-		}
-
 		filmDataBase.removeLike(filmId, userId);
 	}
 
@@ -73,10 +43,7 @@ public class FilmServiceImpl implements FilmService {
 			throw new ValidationException("Передан отрицательный параметр");
 		}
 
-		return filmDataBase.getAllFilms().stream()
-				.sorted()
-				.limit(count)
-				.toList();
+		return filmDataBase.getPopularFilms(count);
 	}
 
 	@Override
@@ -86,62 +53,58 @@ public class FilmServiceImpl implements FilmService {
 
 	@Override
 	public Film createFilm(Film newFilm) {
-		if (newFilm.getMpa() != null) {
-			if (!mpaRatingDbStorage.mpaExist(newFilm.getMpa().getId())) {
-				throw new NotFoundException(mpaNotFound);
-			}
-		}
-
-		if (newFilm.getGenres() != null) {
-			for (Genre genre : newFilm.getGenres()) {
-				if (genre != null && !genreDbStorage.genreExist(genre.getId())) {
-					throw new NotFoundException(genreNotFound);
-				}
-			}
-		}
-
 		validateCreateFilm(newFilm);
-		return filmDataBase.createFilm(newFilm);
+
+		try {
+			Optional<Film> optionalFilm = filmDataBase.createFilm(newFilm);
+			if (optionalFilm.isEmpty()) {
+				throw new NotFoundException(String.format("Рейтинг с id = %d не найден", newFilm.getMpa().getId()));
+			}
+
+			return optionalFilm.get();
+
+		} catch (DataIntegrityViolationException e) {
+			throw new NotFoundException("В жанрах передан неверный id");
+		}
 	}
 
 	@Override
-	public Film updateFilm(Film newFilmData) {
-		if (filmDataBase.filmExist(newFilmData.getId())) {
-			if (newFilmData.getMpa() != null && !mpaRatingDbStorage.mpaExist(newFilmData.getMpa().getId())) {
-				throw new NotFoundException(mpaNotFound);
+	public Film updateFilm(Film newFilmData) { // Не придумал как разделить разные несовпадения полей... Пришло в голову только через исключение ловить жанры, а через Optional ловить рейтинг и id фильма
+		validateUpdateFilm(newFilmData);
+
+		try {
+			Optional<Film> film = filmDataBase.updateFilm(newFilmData);
+			if (film.isEmpty()) {
+				throw new NotFoundException(String.format("Фильм с id = %d не найден или рейтинг с id = %d",
+						newFilmData.getId(), newFilmData.getMpa().getId()));
 			}
 
-			if (newFilmData.getGenres() != null) {
-				for (Genre genre : newFilmData.getGenres()) {
-					if (genre != null && !genreDbStorage.genreExist(genre.getId())) {
-						throw new NotFoundException(genreNotFound);
-					}
-				}
-			}
+			return film.get();
 
-			validateUpdateFilm(newFilmData);
-			return filmDataBase.updateFilm(newFilmData);
+		} catch (DataIntegrityViolationException e) {
+			throw new NotFoundException("В жанрах передан неверный id");
 		}
-
-		throw new NotFoundException(notFound);
 	}
 
 	@Override
 	public Set<Long> getLikes(Long id) {
-		if (filmDataBase.filmExist(id)) {
-			return filmDataBase.getLikes(id);
-		}
+		try {
+			Map<Long, Set<Long>> filmLikes = filmDataBase.getLikes(Collections.singleton(id));
+			return filmLikes.get(id);
 
-		throw new NotFoundException(notFound);
+		} catch (DataIntegrityViolationException e) {
+			throw new NotFoundException(String.format("Фильм с id = %d не найден", id));
+		}
 	}
 
 	@Override
 	public Film getFilm(Long id) {
-		if (filmDataBase.filmExist(id)) {
-			return filmDataBase.getFilm(id);
+		Optional<Film> film = filmDataBase.getFilm(id);
+		if (film.isPresent()) {
+			return film.get();
 		}
 
-		throw new NotFoundException(notFound);
+		throw new NotFoundException(String.format("Фильм с id = %d не найден", id));
 	}
 
 

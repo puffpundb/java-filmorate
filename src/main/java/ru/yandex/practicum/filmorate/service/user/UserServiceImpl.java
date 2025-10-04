@@ -3,6 +3,7 @@ package ru.yandex.practicum.filmorate.service.user;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
@@ -18,8 +19,6 @@ public class UserServiceImpl implements UserService {
 	@Qualifier("userDbStorage")
 	private UserStorage userDataBase;
 
-	private final String notFound = "Пользователь не найден";
-
 	@Autowired
 	public UserServiceImpl(@Qualifier("userDbStorage") UserStorage userDataBase) {
 		this.userDataBase = userDataBase;
@@ -27,53 +26,46 @@ public class UserServiceImpl implements UserService {
 
 	@Override
 	public List<User> getUserFriends(Long userId) {
-		if (userDataBase.userExist(userId)) {
-			List<Long> userFriendsId = new ArrayList<>(userDataBase.getUserFriends(userId));
-
-			return userFriendsId.stream()
-					.map(userDataBase::getUser)
-					.filter(Objects::nonNull)
-					.toList();
+		Optional<User> checkUser = userDataBase.getUser(userId);
+		if (checkUser.isEmpty()) {
+			throw new NotFoundException(String.format("Пользователь с id = %d не найден", userId));
 		}
 
-		throw new NotFoundException(notFound);
+		return userDataBase.getUserFriends(userId);
 	}
 
 	@Override
 	public List<User> addToFriendsList(Long userId, Long friendId) {
-		if (userDataBase.userExist(userId) && userDataBase.userExist(friendId)) {
+		try {
 			userDataBase.addFriend(userId, friendId);
-			return userDataBase.getAllFriends(userId);
+		} catch (DataIntegrityViolationException e) {
+			throw new NotFoundException(String.format("Один из id не найден %d, %d", userId, friendId));
 		}
-
-		throw new NotFoundException(notFound);
+		return userDataBase.getUserFriends(userId);
 	}
 
 	@Override
-	public List<User> deleteFromFriendsList(Long userId, Long friendId) {
-		if (userDataBase.userExist(userId) && userDataBase.userExist(friendId)) {
-			userDataBase.removeFriend(userId, friendId);
-			return userDataBase.getAllFriends(userId);
+	public void deleteFromFriendsList(Long userId, Long friendId) {
+		Optional<User> userOptional = userDataBase.getUser(userId);
+		if (userOptional.isEmpty()) {
+			throw new NotFoundException("");
+		}
+		Optional<User> friendOptional = userDataBase.getUser(friendId);
+		if (friendOptional.isEmpty()) {
+			throw new NotFoundException("");
 		}
 
-		throw new NotFoundException(notFound);
+		userDataBase.removeFriend(userId, friendId);
 	}
 
 	@Override
 	public List<User> getCommonFriends(Long userId, Long friendId) {
-		userDataBase.userExist(userId);
-		User currentUser = userDataBase.getUser(userId);
+		Optional<List<User>> optionalUsers = userDataBase.getCommonFriends(userId, friendId);
+		if (optionalUsers.isPresent()) {
+			return optionalUsers.get();
+		}
 
-		userDataBase.userExist(friendId);
-		User currentFriend = userDataBase.getUser(friendId);
-
-		List<Long> mutualSet = currentUser.getFriendsList().stream()
-				.filter(currentFriend.getFriendsList()::contains)
-				.toList();
-
-		return mutualSet.stream()
-				.map(userDataBase::getUser)
-					.toList();
+		throw new NotFoundException(String.format("Один из id не найден %d, %d", userId, friendId));
 	}
 
 	@Override
@@ -89,12 +81,14 @@ public class UserServiceImpl implements UserService {
 
 	@Override
 	public User updateUser(User newUserData) {
-		if (userDataBase.userExist(newUserData.getId())) {
-			validateUserUpdate(newUserData);
-			return userDataBase.updateUser(newUserData);
+		validateUserUpdate(newUserData);
+
+		Optional<User> optionalUser = userDataBase.updateUser(newUserData);
+		if (optionalUser.isPresent()) {
+			return optionalUser.get();
 		}
 
-		throw new NotFoundException(notFound);
+		throw new NotFoundException(String.format("Пользователь с id = %d не найден", newUserData.getId()));
 	}
 
 	private void validateUserCreate(User currentUser) {
