@@ -10,7 +10,7 @@ import java.util.Set;
 public interface FilmStorage {
 	List<Film> getAllFilms();
 
-	Optional<Film> createFilm(Film newFilm);
+	Film createFilm(Film newFilm);
 
 	Optional<Film> updateFilm(Film newFilmData);
 
@@ -23,4 +23,6 @@ public interface FilmStorage {
 	Map<Long, Set<Long>> getLikes(Set<Long> filmsId);
 
 	List<Film> getPopularFilms(Integer count);
+
+	boolean filmExist(Long id);
 }

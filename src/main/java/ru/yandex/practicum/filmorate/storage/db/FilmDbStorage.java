@@ -9,7 +9,6 @@ import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
-import ru.yandex.practicum.filmorate.model.MpaRating;
 import ru.yandex.practicum.filmorate.model.mapper.FilmRowMapper;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 
@@ -24,7 +23,6 @@ import java.util.stream.Collectors;
 public class FilmDbStorage implements FilmStorage {
 	private final JdbcTemplate jdbcTemplate;
 	private final GenreDbStorage genreDbStorage;
-	private final MpaRatingDbStorage mpaRatingDbStorage;
 
 	@Override
 	public List<Film> getAllFilms() {
@@ -63,41 +61,31 @@ public class FilmDbStorage implements FilmStorage {
 	}
 
 	@Override
-	public Optional<Film> createFilm(Film newFilm) throws DataIntegrityViolationException {
-		try {
-			Optional<MpaRating> mpaRatingOptional = mpaRatingDbStorage.getMpaRatingById(newFilm.getMpa().getId());
-			if (mpaRatingOptional.isEmpty()) {
-				return Optional.empty();
-			}
+	public Film createFilm(Film newFilm) throws DataIntegrityViolationException {
+		GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
+		String sql = "INSERT INTO films (name, description, release_date, duration, mpa_rating_id) VALUES (?, ?, ?, ?, ?)";
+		jdbcTemplate.update(connection -> {
+			PreparedStatement ps = connection.prepareStatement(sql, new String[]{"id"});
+			ps.setString(1, newFilm.getName());
+			ps.setString(2, newFilm.getDescription());
+			ps.setDate(3, Date.valueOf(newFilm.getReleaseDate()));
+			ps.setInt(4, newFilm.getDuration());
+			if (newFilm.getMpa() != null) ps.setObject(5, newFilm.getMpa().getId());
+			else ps.setObject(5, null);
+			return ps;
+		}, keyHolder);
 
-			GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
-			String sql = "INSERT INTO films (name, description, release_date, duration, mpa_rating_id) VALUES (?, ?, ?, ?, ?)";
-			jdbcTemplate.update(connection -> {
-				PreparedStatement ps = connection.prepareStatement(sql, new String[]{"id"});
-				ps.setString(1, newFilm.getName());
-				ps.setString(2, newFilm.getDescription());
-				ps.setDate(3, Date.valueOf(newFilm.getReleaseDate()));
-				ps.setInt(4, newFilm.getDuration());
-				if (newFilm.getMpa() != null) ps.setObject(5, newFilm.getMpa().getId());
-				else ps.setObject(5, null);
-				return ps;
-			}, keyHolder);
+		newFilm.setId(keyHolder.getKeyAs(Long.class));
 
-			newFilm.setId(keyHolder.getKeyAs(Long.class));
-
-			if (newFilm.getGenres() != null && !newFilm.getGenres().isEmpty()) {
-				genreDbStorage.updateGenresInDb(newFilm.getId(), newFilm.getGenres());
-			}
-
-			return Optional.of(newFilm);
-		} catch (Exception e) {
-			e.printStackTrace();
-			throw e;
+		if (newFilm.getGenres() != null && !newFilm.getGenres().isEmpty()) {
+			genreDbStorage.updateGenresInDb(newFilm.getId(), newFilm.getGenres());
 		}
+
+		return newFilm;
 	}
 
 	@Override
-	public Optional<Film> updateFilm(Film newFilmData) throws DataIntegrityViolationException {
+	public Optional<Film> updateFilm(Film newFilmData) {
 		Optional<Film> optionalDbFilm = getFilm(newFilmData.getId());
 		if (optionalDbFilm.isEmpty()) {
 			return optionalDbFilm;
@@ -117,11 +105,6 @@ public class FilmDbStorage implements FilmStorage {
 			currentDbFilm.setDuration(newFilmData.getDuration());
 		}
 		if (newFilmData.getMpa() != null) {
-			Optional<MpaRating> mpaRatingOptional = mpaRatingDbStorage.getMpaRatingById(newFilmData.getMpa().getId());
-			if (mpaRatingOptional.isEmpty()) {
-				return Optional.empty();
-			}
-
 			currentDbFilm.setMpa(newFilmData.getMpa());
 		}
 		if (newFilmData.getGenres() != null) {
@@ -171,7 +154,7 @@ public class FilmDbStorage implements FilmStorage {
 	}
 
 	@Override
-	public void addLike(Long filmId, Long userId) throws DataIntegrityViolationException {
+	public void addLike(Long filmId, Long userId) {
 		String sql = "INSERT INTO films_likes (film_id, user_id) VALUES (?, ?)";
 		jdbcTemplate.update(sql, filmId, userId);
 	}
@@ -251,5 +234,11 @@ public class FilmDbStorage implements FilmStorage {
 		}
 
 		return new ArrayList<>(filmMap.values());
+	}
+
+	@Override
+	public boolean filmExist(Long id) {
+		String sql = "SELECT EXISTS(SELECT 1 FROM films WHERE id = ?)";
+		return jdbcTemplate.queryForObject(sql, Boolean.class, id);
 	}
 }

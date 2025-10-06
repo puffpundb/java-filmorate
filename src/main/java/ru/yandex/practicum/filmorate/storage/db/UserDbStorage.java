@@ -118,7 +118,7 @@ public class UserDbStorage implements UserStorage {
 	}
 
 	@Override
-	public void addFriend(Long id, Long friendId) throws DataIntegrityViolationException {
+	public void addFriend(Long id, Long friendId) {
 		String sql = "INSERT INTO friendship_status (user_id1, user_id2) VALUES (?, ?)";
 		jdbcTemplate.update(sql, id, friendId);
 	}
@@ -143,7 +143,7 @@ public class UserDbStorage implements UserStorage {
 	}
 
 	@Override
-	public Optional<List<User>> getCommonFriends(Long userId, Long friendId) {
+	public List<User> getCommonFriends(Long userId, Long friendId) {
 		String commonFriendsSql = """
         SELECT
             u.id,
@@ -158,10 +158,13 @@ public class UserDbStorage implements UserStorage {
         ORDER BY u.id
         """;
 
-		try {
-			return Optional.of(jdbcTemplate.query(commonFriendsSql, new UserRowMapper(), userId, friendId));
-		} catch (EmptyResultDataAccessException e) {
-			return Optional.empty();
-		}
+
+		return jdbcTemplate.query(commonFriendsSql, new UserRowMapper(), userId, friendId);
+	}
+
+	@Override
+	public boolean userExist(Long id) {
+		String sql = "SELECT EXISTS(SELECT 1 FROM users WHERE id = ?)";
+		return jdbcTemplate.queryForObject(sql, Boolean.class, id);
 	}
 }

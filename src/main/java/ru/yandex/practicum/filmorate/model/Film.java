@@ -9,7 +9,7 @@ import java.util.*;
 @Data
 @NoArgsConstructor
 public class Film implements Comparable<Film> {
-    private long id;
+    private Long id;
 
     private String name;
 

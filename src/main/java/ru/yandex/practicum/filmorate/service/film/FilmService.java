@@ -18,7 +18,7 @@ public interface FilmService {
 
 	Film updateFilm(Film newFilmData);
 
-	Set<Long> getLikes(Long id);
+	List<Long> getLikes(Long id);
 
 	Film getFilm(Long id);
 }

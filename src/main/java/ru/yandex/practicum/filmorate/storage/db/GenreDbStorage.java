@@ -73,4 +73,11 @@ public class GenreDbStorage {
 
 		jdbcTemplate.batchUpdate(genreSql, genreListId);
 	}
+
+	public boolean genreExists(Set<Integer> genreIds) {
+		String placeholders = String.join(",", Collections.nCopies(genreIds.size(), "?"));
+		String sql = "SELECT COUNT(*) = " + genreIds.size() + " FROM genre WHERE id IN (" + placeholders + ")";
+
+		return jdbcTemplate.queryForObject(sql, Boolean.class, genreIds.toArray());
+	}
 }

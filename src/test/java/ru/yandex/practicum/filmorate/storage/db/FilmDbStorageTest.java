@@ -61,7 +61,7 @@ public class FilmDbStorageTest {
 	@Test
 	public void shouldCreateAndReturnFilm() {
 		Film film = createTestFilm();
-		Film createdFilm = filmStorage.createFilm(film).get();
+		Film createdFilm = filmStorage.createFilm(film);
 		Film fromDb = filmStorage.getFilm(createdFilm.getId()).get();
 
 		assertThat(fromDb.getId()).isEqualTo(createdFilm.getId());
@@ -76,7 +76,7 @@ public class FilmDbStorageTest {
 		userStorage.createUser(user);
 
 		Film film = createTestFilm();
-		Film createdFilm = filmStorage.createFilm(film).get();
+		Film createdFilm = filmStorage.createFilm(film);
 		filmStorage.addLike(createdFilm.getId(), userStorage.getUser(user.getId()).get().getId());
 
 		Film fromDb = filmStorage.getFilm(createdFilm.getId()).get();
@@ -102,7 +102,7 @@ public class FilmDbStorageTest {
 
 	@Test
 	public void shouldRightUpdateFilm() {
-		Film film = filmStorage.createFilm(createTestFilm()).get();
+		Film film = filmStorage.createFilm(createTestFilm());
 
 		Film updateData = new Film();
 		updateData.setId(film.getId());

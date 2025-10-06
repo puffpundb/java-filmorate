@@ -36,23 +36,25 @@ public class UserServiceImpl implements UserService {
 
 	@Override
 	public List<User> addToFriendsList(Long userId, Long friendId) {
-		try {
-			userDataBase.addFriend(userId, friendId);
-		} catch (DataIntegrityViolationException e) {
-			throw new NotFoundException(String.format("Один из id не найден %d, %d", userId, friendId));
+		if (!userDataBase.userExist(userId)) {
+			throw new NotFoundException(String.format("Пользователь с id = %d не найден", userId));
 		}
+		if (!userDataBase.userExist(friendId)) {
+			throw new NotFoundException(String.format("Пользователь с id = %d не найден", friendId));
+		}
+
+		userDataBase.addFriend(userId, friendId);
+
 		return userDataBase.getUserFriends(userId);
 	}
 
 	@Override
 	public void deleteFromFriendsList(Long userId, Long friendId) {
-		Optional<User> userOptional = userDataBase.getUser(userId);
-		if (userOptional.isEmpty()) {
-			throw new NotFoundException("");
+		if (!userDataBase.userExist(userId)) {
+			throw new NotFoundException(String.format("Пользователь с id = %d не найден", userId));
 		}
-		Optional<User> friendOptional = userDataBase.getUser(friendId);
-		if (friendOptional.isEmpty()) {
-			throw new NotFoundException("");
+		if (!userDataBase.userExist(friendId)) {
+			throw new NotFoundException(String.format("Пользователь с id = %d не найден", friendId));
 		}
 
 		userDataBase.removeFriend(userId, friendId);
@@ -60,12 +62,14 @@ public class UserServiceImpl implements UserService {
 
 	@Override
 	public List<User> getCommonFriends(Long userId, Long friendId) {
-		Optional<List<User>> optionalUsers = userDataBase.getCommonFriends(userId, friendId);
-		if (optionalUsers.isPresent()) {
-			return optionalUsers.get();
+		if (!userDataBase.userExist(userId)) {
+			throw new NotFoundException(String.format("Пользователь с id = %d не найден", userId));
+		}
+		if (!userDataBase.userExist(friendId)) {
+			throw new NotFoundException(String.format("Пользователь с id = %d не найден", friendId));
 		}
 
-		throw new NotFoundException(String.format("Один из id не найден %d, %d", userId, friendId));
+		return userDataBase.getCommonFriends(userId, friendId);
 	}
 
 	@Override
@@ -76,6 +80,7 @@ public class UserServiceImpl implements UserService {
 	@Override
 	public User createUser(User newUser) {
 		validateUserCreate(newUser);
+
 		return userDataBase.createUser(newUser);
 	}
 
@@ -84,11 +89,11 @@ public class UserServiceImpl implements UserService {
 		validateUserUpdate(newUserData);
 
 		Optional<User> optionalUser = userDataBase.updateUser(newUserData);
-		if (optionalUser.isPresent()) {
-			return optionalUser.get();
+		if (optionalUser.isEmpty()) {
+			throw new NotFoundException(String.format("Пользователь с id = %d не найден", newUserData.getId()));
 		}
 
-		throw new NotFoundException(String.format("Пользователь с id = %d не найден", newUserData.getId()));
+		return optionalUser.get();
 	}
 
 	private void validateUserCreate(User currentUser) {
@@ -111,6 +116,10 @@ public class UserServiceImpl implements UserService {
 	}
 
 	private void validateUserUpdate(User newUserData) {
+		if (newUserData.getId() == null) {
+			log.warn("Ошибка валидации id пользователя пустое");
+			throw new ValidationException("Id пользователя не должно быть пустым");
+		}
 		if (newUserData.getEmail() != null && (newUserData.getEmail().isBlank() || !newUserData.getEmail().contains("@"))) {
 			log.warn("Ошибка валидации: Не корректный email");
 			throw new ValidationException("Email не должен быть пустым и должен указывать на сервис электронной почты");

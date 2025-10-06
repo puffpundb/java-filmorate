@@ -21,5 +21,7 @@ public interface UserStorage {
 
 	List<User> getAllFriends(Long id);
 
-	Optional<List<User>> getCommonFriends(Long userId, Long friendId);
+	List<User> getCommonFriends(Long userId, Long friendId);
+
+	boolean userExist(Long userId);
 }

@@ -29,4 +29,9 @@ public class MpaRatingDbStorage {
 			return Optional.empty();
 		}
 	}
+
+	public boolean ratingExist(Integer id) {
+		String sql = "SELECT EXISTS(SELECT 1 FROM mpa_rating WHERE id = ?)";
+		return jdbcTemplate.queryForObject(sql, Boolean.class, id);
+	}
 }
