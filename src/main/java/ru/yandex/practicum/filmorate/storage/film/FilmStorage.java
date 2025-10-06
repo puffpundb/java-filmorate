@@ -3,15 +3,26 @@ package ru.yandex.practicum.filmorate.storage.film;
 import ru.yandex.practicum.filmorate.model.Film;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 public interface FilmStorage {
-	List<Film> getAllFilm();
+	List<Film> getAllFilms();
 
-	Film createFilm(Film film);
+	Film createFilm(Film newFilm);
 
-	Film updateFilm(Film film);
+	Optional<Film> updateFilm(Film newFilmData);
 
-	boolean isContain(Integer id);
+	Optional<Film> getFilm(Long id);
 
-	Film getFilm(Integer id);
+	void addLike(Long filmId, Long userId) throws org.springframework.dao.DataAccessException;
+
+	void removeLike(Long filmId, Long userId);
+
+	Map<Long, Set<Long>> getLikes(Set<Long> filmsId);
+
+	List<Film> getPopularFilms(Integer count);
+
+	boolean filmExist(Long id);
 }

@@ -1,6 +1,7 @@
 package ru.yandex.practicum.filmorate.controller;
 
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.model.Film;
@@ -8,6 +9,7 @@ import ru.yandex.practicum.filmorate.service.film.FilmService;
 
 import java.util.List;
 
+@Slf4j
 @RestController
 @AllArgsConstructor
 @RequestMapping("/films")
@@ -33,13 +35,13 @@ public class FilmController {
 
     @PutMapping("/{id}/like/{userId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void likedFilm(@PathVariable Integer id, @PathVariable Integer userId) {
+    public void likedFilm(@PathVariable Long id, @PathVariable Long userId) {
         filmService.liked(id, userId);
     }
 
     @DeleteMapping("/{id}/like/{userId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void dislikedFilm(@PathVariable Integer id, @PathVariable Integer userId) {
+    public void dislikedFilm(@PathVariable Long id, @PathVariable Long userId) {
         filmService.disliked(id, userId);
     }
 
@@ -47,5 +49,10 @@ public class FilmController {
     @ResponseStatus(HttpStatus.OK)
     public List<Film> getMostRatedFilms(@RequestParam(defaultValue = "10") int count) {
         return filmService.getMostRatedFilms(count);
+    }
+
+    @GetMapping("/{id}")
+    public Film getFilm(@PathVariable Long id) {
+        return filmService.getFilm(id);
     }
 }

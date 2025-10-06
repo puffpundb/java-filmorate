@@ -5,9 +5,9 @@ import ru.yandex.practicum.filmorate.model.Film;
 import java.util.List;
 
 public interface FilmService {
-	void liked(Integer filmId, Integer userId);
+	void liked(Long filmId, Long userId);
 
-	void disliked(Integer filmId, Integer userId);
+	void disliked(Long filmId, Long userId);
 
 	List<Film> getMostRatedFilms(int count);
 
@@ -16,4 +16,8 @@ public interface FilmService {
 	Film createFilm(Film newFilm);
 
 	Film updateFilm(Film newFilmData);
+
+	List<Long> getLikes(Long id);
+
+	Film getFilm(Long id);
 }

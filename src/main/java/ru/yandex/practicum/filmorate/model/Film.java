@@ -1,14 +1,15 @@
 package ru.yandex.practicum.filmorate.model;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 @Data
+@NoArgsConstructor
 public class Film implements Comparable<Film> {
-    private int id;
+    private Long id;
 
     private String name;
 
@@ -18,10 +19,14 @@ public class Film implements Comparable<Film> {
 
     private Integer duration;
 
-    private Set<Integer> usersLike = new HashSet<>();
+    private Set<Long> usersLike = new HashSet<>();
+
+    private MpaRating mpa;
+
+    private Set<Genre> genres = new HashSet<>();
 
     @Override
     public int compareTo(Film o) {
-        return Integer.compare(o.getUsersLike().size(), this.usersLike.size());
+        return Long.compare(o.getUsersLike().size(), this.usersLike.size());
     }
 }
